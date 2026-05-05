@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, FileText, ListChecks, Sparkles, Download } from "lucide-react";
-import { storage } from "@/lib/storage";
+import { missionsStore } from "@/lib/supabase/missions-store";
 import type { Mission } from "@/types/mission";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -17,14 +17,24 @@ import { ExportPanel } from "@/components/panels/ExportPanel";
 export function MissionWorkspace({ missionId }: { missionId: string }) {
   const [mission, setMission] = useState<Mission | null | undefined>(undefined);
   const [tab, setTab] = useState("context");
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setMission(storage.get(missionId));
+    missionsStore.get(missionId).then(setMission).catch(() => setMission(null));
   }, [missionId]);
 
+  // Optimistic local update + debounced server save
   const update = useCallback((next: Mission) => {
-    const saved = storage.upsert(next);
-    setMission(saved);
+    setMission({ ...next, updatedAt: new Date().toISOString() });
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      try {
+        const saved = await missionsStore.update(next);
+        setMission(saved);
+      } catch (err) {
+        console.error("Sauvegarde mission échouée :", err);
+      }
+    }, 600);
   }, []);
 
   if (mission === undefined) {

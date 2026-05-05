@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, ArrowRight, FileText, Sparkles } from "lucide-react";
-import { storage } from "@/lib/storage";
+import { Plus, ArrowRight, FileText, Sparkles, Loader2 } from "lucide-react";
+import { missionsStore } from "@/lib/supabase/missions-store";
 import { emptyMission, type Mission } from "@/types/mission";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,25 +16,35 @@ import { formatDate } from "@/lib/utils";
 
 export function Dashboard() {
   const [missions, setMissions] = useState<Mission[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [clientName, setClientName] = useState("");
   const [website, setWebsite] = useState("");
 
   useEffect(() => {
-    setMissions(storage.list());
+    missionsStore.list()
+      .then(setMissions)
+      .catch((e) => setError(e instanceof Error ? e.message : "Erreur de chargement"));
   }, []);
 
-  function createMission(e: React.FormEvent) {
+  async function createMission(e: React.FormEvent) {
     e.preventDefault();
     if (!clientName.trim()) return;
-    const m = emptyMission(clientName.trim());
-    if (website.trim()) m.clientWebsite = website.trim();
-    storage.upsert(m);
-    setMissions(storage.list());
-    setClientName("");
-    setWebsite("");
-    setOpen(false);
-    window.location.href = `/missions/${m.id}`;
+    setBusy(true);
+    try {
+      const m = emptyMission(clientName.trim());
+      if (website.trim()) m.clientWebsite = website.trim();
+      const saved = await missionsStore.create(m);
+      setClientName("");
+      setWebsite("");
+      setOpen(false);
+      window.location.href = `/missions/${saved.id}`;
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erreur création");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -69,25 +79,33 @@ export function Dashboard() {
               <div className="grid gap-4 mt-4">
                 <div className="grid gap-2">
                   <Label htmlFor="clientName">Nom du client</Label>
-                  <Input id="clientName" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="ex. Bowigo" autoFocus required />
+                  <Input id="clientName" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="ex. Bowigo" autoFocus required disabled={busy} />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="website">Site web (optionnel)</Label>
-                  <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://…" type="url" />
+                  <Input id="website" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://…" type="url" disabled={busy} />
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-6">
                 <DialogClose asChild>
-                  <Button variant="ghost" type="button">Annuler</Button>
+                  <Button variant="ghost" type="button" disabled={busy}>Annuler</Button>
                 </DialogClose>
-                <Button type="submit" variant="accent">Créer la mission <ArrowRight /></Button>
+                <Button type="submit" variant="accent" disabled={busy}>
+                  {busy ? <><Loader2 className="animate-spin" /> Création…</> : <>Créer la mission <ArrowRight /></>}
+                </Button>
               </div>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      {missions !== null && missions.length === 0 && (
+      {error && (
+        <Card className="border-destructive/50 bg-destructive/5 mb-4">
+          <CardContent className="py-4 text-sm text-destructive">{error}</CardContent>
+        </Card>
+      )}
+
+      {missions !== null && missions.length === 0 && !error && (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <div className="rounded-full bg-accent/10 p-4 mb-4"><Sparkles className="h-6 w-6 text-accent" /></div>

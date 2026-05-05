@@ -16,31 +16,60 @@ L'IA propose, le collaborateur Noxias arbitre, le client valide.
 - PDF parsing serveur : `pdf-parse`
 - Web scraping serveur : `fetch` natif
 
-## Démarrer en local
+## Setup complet
+
+### 1. Supabase (5 min)
+
+1. Crée un projet gratuit sur [supabase.com](https://supabase.com).
+2. **SQL Editor** → New query → colle le contenu de [`supabase/migrations/0001_init.sql`](./supabase/migrations/0001_init.sql) → Run.
+3. **Authentication → Providers → Email** :
+   - `Enable Email provider` ✅
+   - `Confirm email` ✅
+   - `Allow new users to sign up` ❌ (désactivé : seul l'admin invite)
+4. **Authentication → URL Configuration** :
+   - `Site URL` = ton URL prod (ex. `https://prospection.noxias.com`)
+   - `Redirect URLs` = ajoute `http://localhost:3000/auth/callback` et `https://<ton-domaine>/auth/callback`
+5. **Authentication → Users → Invite user** : invite tes collaborateurs un par un.
+6. **Project Settings → API** : récupère `URL` et `anon public key`.
+
+### 2. Anthropic
+
+Récupère une clé API sur [console.anthropic.com](https://console.anthropic.com).
+
+### 3. Local
 
 ```bash
-# 1. Installer les dépendances
 npm install
-
-# 2. Renseigner les variables d'environnement
 cp .env.example .env.local
-# → ouvre .env.local et colle ta clé ANTHROPIC_API_KEY
-
-# 3. Lancer le serveur de dev
+# → colle ANTHROPIC_API_KEY, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY
 npm run dev
 ```
 
-L'app tourne sur http://localhost:3000.
+L'app tourne sur http://localhost:3000. La première visite te redirige sur `/login`. Renseigne ton email Noxias, clique le lien magique reçu, tu es dans l'app.
 
 ## Variables d'environnement
 
 | Variable | Requis | Notes |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | ✅ | Clé API Anthropic ([console.anthropic.com](https://console.anthropic.com)) |
-| `ANTHROPIC_MODEL` | optionnel | Default : `claude-opus-4-7`. Pour réduire le coût, utiliser `claude-sonnet-4-6`. |
-| `NEXT_PUBLIC_APP_URL` | optionnel | URL publique de l'app (utile en prod). |
+| `ANTHROPIC_API_KEY` | ✅ | Clé API Anthropic |
+| `ANTHROPIC_MODEL` | optionnel | Default : `claude-opus-4-7`. `claude-sonnet-4-6` pour ~3× moins cher. |
+| `NEXT_PUBLIC_SUPABASE_URL` | ✅ | URL projet Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Clé anon publique Supabase |
+| `NEXT_PUBLIC_APP_URL` | optionnel | URL publique de l'app |
 
-Pour V1, **aucune base de données** n'est nécessaire — tout vit dans le localStorage du navigateur du collaborateur.
+## Modèle d'auth & permissions
+
+- **Magic link** par email. Aucun mot de passe.
+- **Workspace partagé** : tous les utilisateurs invités voient et éditent toutes les missions. Idéal pour une équipe Noxias unique.
+- **Signups désactivés** côté Supabase : impossible de s'inscrire sans invitation préalable d'un admin.
+- **RLS active** sur la table `missions` : seuls les utilisateurs authentifiés peuvent lire/écrire (les requêtes anonymes sont rejetées au niveau base de données, pas seulement applicatif).
+- **Middleware** : tout chemin (sauf `/login`, `/auth/*`) exige une session. Les routes API renvoient `401 JSON` si non authentifié, les routes UI redirigent vers `/login`.
+
+## Inviter un nouveau membre de l'équipe
+
+1. Supabase Dashboard → Authentication → Users → Invite user → email.
+2. Le membre reçoit un email d'invitation.
+3. Au clic, il atterrit sur `/login`, retape son email pour recevoir le magic link, et accède à l'app.
 
 ## Architecture
 
@@ -106,42 +135,6 @@ officiel, déposer le SVG dans `public/brand/logo.svg` et le remplacer dans
 
 Le prompt système Noxias et le contexte mission sont mis en cache (TTL 5 min). Les appels IA pour la même mission dans la même session bénéficient d'un coût d'input ~10× réduit.
 
-## Migration vers Supabase (V2)
-
-Le V1 utilise localStorage : simple, zéro config, mais limité à un navigateur. Pour passer multi-utilisateurs / multi-appareils :
-
-1. Créer un projet [Supabase](https://supabase.com), récupérer URL + anon key.
-2. Ajouter une table `missions` :
-
-   ```sql
-   create table missions (
-     id uuid primary key default gen_random_uuid(),
-     user_id uuid references auth.users not null,
-     client_name text not null,
-     client_website text,
-     notes text,
-     files jsonb default '[]'::jsonb,
-     matrix jsonb default '{}'::jsonb,
-     toolbox jsonb,
-     created_at timestamptz default now(),
-     updated_at timestamptz default now()
-   );
-   alter table missions enable row level security;
-   create policy "users see own missions" on missions for all using (auth.uid() = user_id);
-   ```
-
-3. Remplacer `src/lib/storage.ts` par un client Supabase :
-
-   ```ts
-   import { createBrowserClient } from "@supabase/ssr";
-   const supabase = createBrowserClient(URL, ANON_KEY);
-   // implémenter list, get, upsert, remove via supabase.from("missions").{select,upsert,delete}
-   ```
-
-4. Ajouter une page `/login` avec magic link (`supabase.auth.signInWithOtp`).
-5. Wrapper le layout avec un middleware Supabase qui redirige vers `/login` si pas auth.
-
-L'API IA et l'UI restent inchangées — seule la couche storage change.
 
 ## Déploiement (Vercel)
 

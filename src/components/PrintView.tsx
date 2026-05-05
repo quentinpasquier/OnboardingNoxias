@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { storage } from "@/lib/storage";
+import { missionsStore } from "@/lib/supabase/missions-store";
 import type { Mission } from "@/types/mission";
 import { MATRIX_QUESTIONS } from "@/lib/matrix-questions";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ export function PrintView({ missionId }: { missionId: string }) {
   const [mission, setMission] = useState<Mission | null | undefined>(undefined);
 
   useEffect(() => {
-    setMission(storage.get(missionId));
+    missionsStore.get(missionId).then(setMission).catch(() => setMission(null));
   }, [missionId]);
 
   if (mission === undefined) return <main className="p-8">Chargement…</main>;

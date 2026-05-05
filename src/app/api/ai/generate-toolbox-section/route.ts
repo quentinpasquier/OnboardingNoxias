@@ -17,7 +17,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Job manquant" }, { status: 400 });
     }
 
-    const { schema, userPrompt, expert, maxTokens } = getJobPrompt(job);
+    const { schema, userPrompt, expert, maxTokens, effort } = getJobPrompt(job);
     const context = buildMissionContext(mission, { includeMatrix: true });
 
     // Si agent expert : on injecte l'addendum dans le system prompt avant
@@ -33,12 +33,13 @@ export async function POST(req: Request) {
       ? `${userPrompt}\n\n**Instructions complémentaires :**\n${refineInstructions.trim()}`
       : userPrompt;
 
+    const startedAt = Date.now();
     const stream = anthropic.messages.stream({
       model: MODEL,
       max_tokens: maxTokens,
       thinking: { type: "adaptive" },
       output_config: {
-        effort: "medium",
+        effort,
         format: { type: "json_schema", schema },
       },
       system: systemBlocks,
@@ -46,6 +47,7 @@ export async function POST(req: Request) {
     });
 
     const final = await stream.finalMessage();
+    const durationMs = Date.now() - startedAt;
     const text = final.content
       .filter((b) => b.type === "text")
       .map((b) => (b as { type: "text"; text: string }).text)
@@ -61,6 +63,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       job,
       data: parsed,
+      durationMs,
       usage: {
         input: final.usage.input_tokens,
         output: final.usage.output_tokens,
@@ -70,6 +73,7 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erreur IA";
+    console.error("[generate-toolbox-section] error:", message, err);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

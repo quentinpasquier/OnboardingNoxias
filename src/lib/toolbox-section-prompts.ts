@@ -306,6 +306,7 @@ export type JobPrompt = {
   userPrompt: string;
   expert: boolean; // true = on ajoute l'addendum agent commercial expert
   maxTokens: number;
+  effort: "low" | "medium" | "high"; // low pour les jobs lourds (pitch, objections) → reste sous 60s
 };
 
 export function getJobPrompt(job: Job): JobPrompt {
@@ -314,7 +315,8 @@ export function getJobPrompt(job: Job): JobPrompt {
       return {
         schema: positioningSchema,
         expert: false,
-        maxTokens: 12000,
+        maxTokens: 10000,
+        effort: "medium",
         userPrompt: `Génère la section **positionnement** de la boîte à outils du commercial.
 
 - **intro** : 4 à 6 paragraphes (~ 200–400 mots). Cadre le document, explique l'enjeu réel (au-delà du produit), positionne le client comme partenaire/expert (pas simple fournisseur). Cite les forces concrètes extraites de la matrice.
@@ -333,7 +335,8 @@ ${COMMON_RULES}`,
       return {
         schema: personasSchema,
         expert: false,
-        maxTokens: 14000,
+        maxTokens: 12000,
+        effort: "medium",
         userPrompt: `Génère la section **personas** de la boîte à outils. Produis 1 à 3 personas (idéal 2). Chacun :
 - **title** : "Persona N : [phrase descriptive]".
 - **profile** : 2–3 paragraphes narratifs.
@@ -349,7 +352,8 @@ ${COMMON_RULES}`,
       return {
         schema: argumentsSchema,
         expert: false,
-        maxTokens: 8000,
+        maxTokens: 6000,
+        effort: "low",
         userPrompt: `Génère le bloc **arguments massue + disqualification**.
 - **disqualified** : 4–6 phrases sur les profils à NE PAS prospecter.
 - **killerArguments** : 6 à 8 arguments. Chacun : **headline** entre guillemets typographiques « … » (≤ 18 mots) + **body** 3–5 phrases denses qui expliquent le contexte et le payoff.
@@ -359,10 +363,14 @@ ${COMMON_RULES}`,
 
     case "pitch_section": {
       const def = PITCH_USER_BY_ID[job.id];
+      // Sections 4.0 (réponses adaptées 6-8 variantes) et 1.1 (brise-glace 3-4 variantes longues)
+      // sont les plus lourdes : on garde max_tokens raisonnable et effort low pour rester < 60s.
+      const heavySection = job.id === "4.0" || job.id === "1.1";
       return {
         schema: pitchSectionSchema,
         expert: true,
-        maxTokens: 10000,
+        maxTokens: heavySection ? 6000 : 4500,
+        effort: "low",
         userPrompt: `Génère **uniquement la section "${job.id} — ${def.label}"** du pitch V1.
 
 Format de sortie (JSON) :
@@ -382,7 +390,8 @@ ${COMMON_RULES}`,
       return {
         schema: objectionCategorySchema,
         expert: true,
-        maxTokens: 6000,
+        maxTokens: 5000,
+        effort: "low",
         userPrompt: `Génère **uniquement la famille d'objections "${job.code} — ${def.label}"** : EXACTEMENT 6 objections, ids de ${startId} à ${startId + 5}, toutes avec **category = "${job.code}"**.
 
 Pour chaque objection :
@@ -398,7 +407,8 @@ ${COMMON_RULES}`,
       return {
         schema: qualificationSchema,
         expert: false,
-        maxTokens: 8000,
+        maxTokens: 6000,
+        effort: "medium",
         userPrompt: `Génère la **matrice de qualification (Scoring R1)**.
 
 - **criteria** : EXACTEMENT 5 critères dans cet ordre — Douleur (PAIN), Objectif (GAIN), Budget, Autorité (Décision), Urgence (Déclencheur). Pour chacun, score0/score1/score2 décrivent **avec exemples concrets entre guillemets** ("Mon site n'est plus à jour", "Je paye 200 €/mois et je ne suis pas content").

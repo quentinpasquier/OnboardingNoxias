@@ -314,14 +314,25 @@ function RegenerateJobButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mission, job, refineInstructions: instructions.trim() || undefined }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? `Erreur ${res.status}`);
+      let data: { error?: string; data?: Record<string, unknown>; raw?: string };
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(`Réponse serveur invalide (${res.status} ${res.statusText})`);
+      }
+      if (!res.ok) {
+        const msg = data?.error ?? `Erreur HTTP ${res.status}`;
+        const extra = data?.raw ? ` — extrait : "${String(data.raw).slice(0, 120)}…"` : "";
+        throw new Error(msg + extra);
+      }
+      if (!data?.data) throw new Error("Réponse IA vide ou mal formée.");
 
-      update((prev) => ({ ...prev, toolbox: mergeJobResult(prev.toolbox ?? emptyToolbox(), job, data.data) }));
+      update((prev) => ({ ...prev, toolbox: mergeJobResult(prev.toolbox ?? emptyToolbox(), job, data.data!) }));
       setOpen(false);
       setInstructions("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur");
+      console.error("[regen-job]", job, err);
+      setError(err instanceof Error ? err.message : "Erreur inconnue");
     } finally {
       setBusy(false);
     }
@@ -351,7 +362,15 @@ function RegenerateJobButton({
             </div>
           )}
           {busy && <div className="py-4"><AiThinking label={`Génération ${jobLabel(job).toLowerCase()}`} size="md" /></div>}
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              <p className="font-medium mb-1">La génération a échoué</p>
+              <p className="text-xs leading-relaxed">{error}</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Si l'erreur mentionne un timeout : la section est trop grosse. Tente avec une instruction « plus court, format plus serré » ou contacte l'équipe Noxias.
+              </p>
+            </div>
+          )}
           <div className="flex justify-end gap-2">
             <DialogClose asChild>
               <Button variant="ghost" disabled={busy}>Fermer</Button>

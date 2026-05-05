@@ -23,7 +23,7 @@ export function Header({ trail }: { trail?: { label: string; href?: string }[] }
             </nav>
           )}
         </div>
-        <div className="text-xs text-muted-foreground">Prospection Builder</div>
+        <div className="text-xs text-muted-foreground uppercase tracking-[0.18em]">Prospection Builder</div>
       </div>
     </header>
   );

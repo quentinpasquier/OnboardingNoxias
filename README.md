@@ -80,21 +80,24 @@ src/
 
 ## Branding
 
-Le branding Noxias est encapsulé dans des variables CSS (`src/app/globals.css`) :
+La charte Noxias est encapsulée dans `src/app/globals.css` :
 
 ```css
 :root {
-  --noxias-ink: 220 35% 9%;
-  --noxias-paper: 36 33% 97%;
-  --noxias-accent: 28 60% 55%;
+  --noxias-ink: 216 100% 6%;        /* #000c1e */
+  --noxias-deep: 261 33% 15%;       /* #221932 */
+  --noxias-paper: 0 0% 100%;        /* #ffffff */
+  --noxias-accent: 146 56% 51%;     /* #3cc879 */
   --noxias-muted: 220 12% 45%;
 }
 ```
 
-Pour appliquer la vraie identité Noxias :
-- Remplacer ces 4 valeurs HSL par les couleurs de la charte.
-- Remplacer le logo SVG dans `src/components/branding/Logo.tsx`.
-- Adapter les fonts dans `src/app/layout.tsx` (actuellement Inter + Fraunces).
+Font : **Ubuntu** (Google Fonts) chargée dans `src/app/layout.tsx`.
+
+Logo : recréé en SVG dans `src/components/branding/Logo.tsx` (wordmark
+"noxias" + triangle vert ▶ entre le `a` et le `s`). Pour utiliser l'asset
+officiel, déposer le SVG dans `public/brand/logo.svg` et le remplacer dans
+`Logo.tsx` par un composant `next/image`.
 
 ## Coûts IA estimés
 

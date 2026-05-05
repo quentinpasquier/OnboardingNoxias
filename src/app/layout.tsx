@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
-import { Inter, Fraunces } from "next/font/google";
+import { Ubuntu } from "next/font/google";
 import "./globals.css";
 
-const sans = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
-const display = Fraunces({ subsets: ["latin"], variable: "--font-display", display: "swap", weight: ["400", "500", "600"] });
+const ubuntu = Ubuntu({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+  weight: ["300", "400", "500", "700"],
+});
 
 export const metadata: Metadata = {
   title: "Noxias — Prospection Builder",
@@ -12,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${sans.variable} ${display.variable}`}>
+    <html lang="fr" className={ubuntu.variable}>
       <body className="min-h-screen font-sans antialiased noxias-grain">
         {children}
       </body>

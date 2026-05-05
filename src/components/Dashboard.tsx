@@ -39,13 +39,13 @@ export function Dashboard() {
 
   return (
     <main className="container max-w-6xl py-12">
-      <section className="mb-12">
-        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">Conseil prospection · co-construction client</p>
-        <h1 className="font-display text-4xl md:text-5xl font-medium tracking-tight mb-4 max-w-3xl leading-[1.1]">
-          Construisez la matrice et la boîte à outils du commercial <span className="text-accent">avec votre client</span>.
+      <section className="mb-12 noxias-hero-glow rounded-2xl p-8 md:p-10 -mx-2">
+        <p className="text-xs uppercase tracking-[0.22em] text-noxias-muted mb-4 font-medium">Atelier prospection · co-construction client</p>
+        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight mb-4 max-w-3xl leading-[1.05] text-noxias-ink">
+          La matrice et la boîte à outils du commercial, <span className="text-accent">prêtes en 2 h</span>.
         </h1>
-        <p className="text-muted-foreground max-w-2xl text-base leading-relaxed">
-          Un atelier guidé en deux temps. L'IA propose, vous arbitrez, le client valide. À la sortie : deux livrables prêts à l'emploi.
+        <p className="text-noxias-muted max-w-2xl text-base md:text-lg leading-relaxed">
+          Vous interviewez le client, l'IA structure, vous arbitrez. À la sortie : deux livrables actionnables, calés sur la méthode Noxias.
         </p>
       </section>
 

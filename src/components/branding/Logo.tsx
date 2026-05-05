@@ -1,14 +1,31 @@
 import { cn } from "@/lib/utils";
 
-export function NoxiasLogo({ className }: { className?: string }) {
+/**
+ * Wordmark Noxias — recréé en SVG (Ubuntu, accent vert #3cc879).
+ * Pour utiliser l'asset officiel, remplacer ce fichier par un import du SVG :
+ *   import LogoSvg from "@/../public/brand/logo.svg";
+ *   export const NoxiasLogo = ({ className }) => <Image src={LogoSvg} ... />;
+ */
+export function NoxiasLogo({ className, mono = false }: { className?: string; mono?: boolean }) {
+  const ink = mono ? "currentColor" : "hsl(var(--noxias-ink))";
+  const accent = mono ? "currentColor" : "hsl(var(--noxias-accent))";
   return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-        <rect x="1" y="1" width="30" height="30" rx="6" stroke="hsl(var(--noxias-ink))" strokeWidth="1.5" fill="hsl(var(--noxias-paper))" />
-        <path d="M9 22V10L23 22V10" stroke="hsl(var(--noxias-ink))" strokeWidth="2" strokeLinecap="square" />
-        <circle cx="23" cy="10" r="2" fill="hsl(var(--noxias-accent))" />
+    <div className={cn("flex items-center gap-1", className)} aria-label="Noxias">
+      <span
+        className="font-sans tracking-tight text-[1.2rem] leading-none font-light"
+        style={{ color: ink, letterSpacing: "0.02em" }}
+      >
+        noxia
+      </span>
+      <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden className="-mb-[1px]">
+        <polygon points="3,2 13,8 3,14" fill={accent} />
       </svg>
-      <span className="font-display text-lg font-medium tracking-tight">noxias</span>
+      <span
+        className="font-sans tracking-tight text-[1.2rem] leading-none font-light"
+        style={{ color: ink, letterSpacing: "0.02em" }}
+      >
+        s
+      </span>
     </div>
   );
 }

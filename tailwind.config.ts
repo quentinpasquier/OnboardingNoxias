@@ -20,14 +20,15 @@ const config: Config = {
         ring: "hsl(var(--ring))",
         noxias: {
           ink: "hsl(var(--noxias-ink))",
+          deep: "hsl(var(--noxias-deep))",
           paper: "hsl(var(--noxias-paper))",
           accent: "hsl(var(--noxias-accent))",
           muted: "hsl(var(--noxias-muted))",
         },
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "Georgia", "serif"],
+        sans: ["var(--font-sans)", "Ubuntu", "system-ui", "sans-serif"],
+        display: ["var(--font-sans)", "Ubuntu", "system-ui", "sans-serif"],
       },
       borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" },
     },

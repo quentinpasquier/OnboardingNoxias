@@ -31,7 +31,10 @@ export async function POST(req: Request) {
 **${q.category}**
 **Question :** ${q.question}${q.hint ? `\n**Indication :** ${q.hint}` : ""}
 
-Formule une réponse opérationnelle, ancrée dans le contexte client fourni. 4 à 8 phrases denses, ton Noxias. Pas de listes à puces sauf si la question l'appelle (cibles, canaux, KPI).`
+**Format :**
+- Si la question appelle une énumération (cibles, canaux, KPI, services, douleurs, motivations, déclencheurs, objections, freins, phrases à marteler), réponds en **liste à puces** \`- ...\` (4 à 8 puces denses, une idée par ligne, sans numérotation).
+- Sinon, 3 à 5 phrases denses sans préambule.
+- Ton Noxias : direct, premium, posé. Ancré dans le contexte client fourni.`
         : `Affine cette réponse de la matrice de prospection :
 
 **${q.category}**
@@ -40,9 +43,9 @@ Formule une réponse opérationnelle, ancrée dans le contexte client fourni. 4 
 ${currentAnswer ?? ""}
 
 **Instructions du collaborateur :**
-${instructions ?? "Améliore la clarté et la densité, garde le sens."}
+${instructions ?? "Améliore la clarté et la densité, garde le sens. Privilégie les listes à puces si la question s'y prête."}
 
-Renvoie uniquement la réponse retravaillée.`;
+Renvoie uniquement la réponse retravaillée, sans préambule.`;
 
     const response = await anthropic.messages.create({
       model: MODEL,

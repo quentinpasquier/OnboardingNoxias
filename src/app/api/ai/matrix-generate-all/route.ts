@@ -7,7 +7,7 @@ import type { Mission } from "@/types/mission";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-type Body = { mission: Mission; refineInstructions?: string };
+type Body = { mission: Mission; questionIds?: number[]; refineInstructions?: string };
 
 const ANSWERS_SCHEMA = {
   type: "object",
@@ -29,47 +29,55 @@ const ANSWERS_SCHEMA = {
   required: ["answers"],
 } as const;
 
+const LIST_FRIENDLY_IDS = new Set([2, 3, 15, 19, 20, 22, 23, 24, 26, 30]);
+
 export async function POST(req: Request) {
   try {
-    const { mission, refineInstructions } = (await req.json()) as Body;
+    const { mission, questionIds, refineInstructions } = (await req.json()) as Body;
 
-    const missingIds = MATRIX_QUESTIONS
-      .filter((q) => !mission.matrix[q.id]?.trim())
-      .map((q) => q.id);
+    const targetIds = (questionIds && questionIds.length > 0
+      ? questionIds
+      : MATRIX_QUESTIONS.filter((q) => !mission.matrix[q.id]?.trim()).map((q) => q.id));
 
-    if (missingIds.length === 0) {
-      return NextResponse.json({ answers: [], skipped: "Toutes les questions sont déjà remplies." });
+    if (targetIds.length === 0) {
+      return NextResponse.json({ answers: [], skipped: "Aucune question à traiter dans ce lot." });
     }
 
     const context = buildMissionContext(mission, { includeMatrix: true });
     const system = buildSystem(context);
 
     const questionsList = MATRIX_QUESTIONS
-      .filter((q) => missingIds.includes(q.id))
-      .map((q) => `[${q.id}] **${q.category}** — ${q.question}${q.hint ? ` _(${q.hint})_` : ""}`)
+      .filter((q) => targetIds.includes(q.id))
+      .map((q) => {
+        const list = LIST_FRIENDLY_IDS.has(q.id) ? " (réponse en liste à puces `- ...`)" : "";
+        return `[${q.id}] **${q.category}** — ${q.question}${q.hint ? ` _(${q.hint})_` : ""}${list}`;
+      })
       .join("\n");
 
-    const userPrompt = `Génère une réponse pour CHACUNE des ${missingIds.length} questions ci-dessous, en t'appuyant sur le contexte client fourni (sources documentaires, site web, notes, et matrice déjà remplie).
+    const userPrompt = `Génère une réponse pour CHACUNE des ${targetIds.length} questions ci-dessous, en t'appuyant sur le contexte client (sources documentaires, site web, notes, et matrice déjà remplie).
 
 **Questions à traiter :**
 ${questionsList}
 
-**Exigences :**
+**Format obligatoire :**
 - Une réponse par question, **id strictement identique** au numéro fourni.
-- 4 à 8 phrases denses par réponse, ton Noxias (direct, premium, posé, sans préambule).
+- Privilégier la **liste à puces** (\`- ...\`, une idée par ligne) pour toutes les questions qui appellent une énumération (cibles, canaux, KPI, services, douleurs, motivations, déclencheurs, objections, freins, phrases à marteler). 4 à 8 puces par liste, denses, sans numérotation.
+- Pour les questions purement narratives (introduction, promesse en une phrase, ancrage final), 3 à 5 phrases denses, sans liste.
+- Ton Noxias : direct, premium, posé, pas de préambule, pas de jargon creux.
+
+**Exigences de fond :**
 - Ancre dans les éléments concrets du contexte. Si une info manque, infère prudemment plutôt que de laisser vide ou de faire générique.
-- Pas de "TODO" ni "à compléter".
-- Pas de listes à puces sauf si la question l'appelle (cibles, canaux, KPI).
-- Cohérence transverse : les réponses doivent former un ensemble logique (le persona des questions 4-14 doit coller à la cible des questions 2-3, etc.).${refineInstructions?.trim() ? `\n\n**Instructions complémentaires du collaborateur :**\n${refineInstructions.trim()}` : ""}
+- Pas de "TODO" ni "à compléter". Pas de phrases qui commencent par "Voici…" ou "Bien sûr…".
+- Cohérence transverse : les réponses du lot doivent être logiquement compatibles entre elles ET avec le reste de la matrice déjà remplie (visible dans le contexte).${refineInstructions?.trim() ? `\n\n**Instructions complémentaires du collaborateur :**\n${refineInstructions.trim()}` : ""}
 
 Réponds en JSON strict conforme au schéma. Aucun markdown autour.`;
 
     const stream = anthropic.messages.stream({
       model: MODEL,
-      max_tokens: 64000,
+      max_tokens: 32000,
       thinking: { type: "adaptive" },
       output_config: {
-        effort: "high",
+        effort: "medium",
         format: { type: "json_schema", schema: ANSWERS_SCHEMA },
       },
       system,
@@ -92,7 +100,7 @@ Réponds en JSON strict conforme au schéma. Aucun markdown autour.`;
 
     return NextResponse.json({
       answers: parsed.answers,
-      requested: missingIds.length,
+      requested: targetIds.length,
       received: parsed.answers.length,
       usage: {
         input: final.usage.input_tokens,

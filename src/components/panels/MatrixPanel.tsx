@@ -1,22 +1,32 @@
 "use client";
-import { useState, useMemo } from "react";
-import { Sparkles, Loader2, Check, X, Wand2, CheckCircle2, FileQuestion, FileEdit } from "lucide-react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { Sparkles, Loader2, Check, X, Wand2, CheckCircle2, FileQuestion, FileEdit, StopCircle } from "lucide-react";
 import type { Mission } from "@/types/mission";
 import { MATRIX_QUESTIONS, CATEGORY_GROUPS } from "@/lib/matrix-questions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 type Status = "draft" | "validated" | "empty";
+type MissionStatusMap = NonNullable<Mission["matrixStatus"]>;
+
+const BATCH_SIZE = 6;
 
 function statusOf(mission: Mission, id: number): Status {
   const text = mission.matrix[id]?.trim();
   if (!text) return "empty";
   return mission.matrixStatus?.[id] ?? "validated";
+}
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }
 
 export function MatrixPanel({ mission, update }: { mission: Mission; update: (m: Mission) => void }) {
@@ -38,7 +48,7 @@ export function MatrixPanel({ mission, update }: { mission: Mission; update: (m:
   }, [mission]);
 
   function setAnswer(id: number, value: string) {
-    const status: MissionStatus = { ...(mission.matrixStatus ?? {}) };
+    const status: MissionStatusMap = { ...(mission.matrixStatus ?? {}) };
     if (value.trim()) status[id] = "validated";
     else delete status[id];
     update({ ...mission, matrix: { ...mission.matrix, [id]: value }, matrixStatus: status });
@@ -68,6 +78,14 @@ export function MatrixPanel({ mission, update }: { mission: Mission; update: (m:
     update({ ...mission, matrixStatus: status });
   }
 
+  function validateSection(ids: number[]) {
+    const status = { ...(mission.matrixStatus ?? {}) };
+    for (const id of ids) {
+      if (mission.matrix[id]?.trim() && status[id] !== "validated") status[id] = "validated";
+    }
+    update({ ...mission, matrixStatus: status });
+  }
+
   return (
     <div className="space-y-5">
       <BulkGenerateBar
@@ -77,26 +95,33 @@ export function MatrixPanel({ mission, update }: { mission: Mission; update: (m:
         onValidateAll={validateAllDrafts}
       />
 
-      <div className="grid lg:grid-cols-[240px_1fr] gap-6">
+      <div className="grid lg:grid-cols-[260px_1fr] gap-6">
         <aside className="space-y-1">
           <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2 px-2">Sections</p>
           {CATEGORY_GROUPS.map((g) => {
             const draftCount = g.ids.filter((id) => statusOf(mission, id) === "draft").length;
             const validatedCount = g.ids.filter((id) => statusOf(mission, id) === "validated").length;
+            const isActive = activeGroup === g.label;
             return (
-              <button
-                key={g.label}
-                onClick={() => setActiveGroup(g.label)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between ${
-                  activeGroup === g.label ? "bg-card border border-border shadow-sm" : "hover:bg-secondary/60"
-                }`}
-              >
-                <span className={activeGroup === g.label ? "font-medium" : ""}>{g.label}</span>
-                <span className="flex items-center gap-1 text-xs tabular-nums">
-                  {draftCount > 0 && <span className="text-amber-600 font-medium">{draftCount}</span>}
-                  <span className="text-muted-foreground">{validatedCount}/{g.ids.length}</span>
-                </span>
-              </button>
+              <div key={g.label} className={`rounded-md transition-colors ${isActive ? "bg-card border border-border shadow-sm" : "hover:bg-secondary/60"}`}>
+                <button
+                  onClick={() => setActiveGroup(g.label)}
+                  className="w-full text-left px-3 py-2 text-sm flex items-center justify-between"
+                >
+                  <span className={isActive ? "font-medium" : ""}>{g.label}</span>
+                  <span className="flex items-center gap-1 text-xs tabular-nums">
+                    {draftCount > 0 && <span className="text-amber-600 font-medium">{draftCount}</span>}
+                    <span className="text-muted-foreground">{validatedCount}/{g.ids.length}</span>
+                  </span>
+                </button>
+                {isActive && draftCount > 0 && (
+                  <div className="px-3 pb-2 pt-1">
+                    <Button size="sm" variant="outline" className="w-full text-xs" onClick={() => validateSection(g.ids)}>
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Valider la section ({draftCount})
+                    </Button>
+                  </div>
+                )}
+              </div>
             );
           })}
         </aside>
@@ -122,8 +147,6 @@ export function MatrixPanel({ mission, update }: { mission: Mission; update: (m:
   );
 }
 
-type MissionStatus = NonNullable<Mission["matrixStatus"]>;
-
 function BulkGenerateBar({
   mission,
   counts,
@@ -139,30 +162,61 @@ function BulkGenerateBar({
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [instructions, setInstructions] = useState("");
+  const [progress, setProgress] = useState<{ done: number; total: number; current: string } | null>(null);
+  const cancelRef = useRef(false);
 
   async function generate() {
     setBusy(true);
     setError(null);
+    cancelRef.current = false;
+
+    const missingIds = MATRIX_QUESTIONS.filter((q) => !mission.matrix[q.id]?.trim()).map((q) => q.id);
+    if (missingIds.length === 0) {
+      setError("Toutes les questions sont déjà remplies.");
+      setBusy(false);
+      return;
+    }
+
+    const batches = chunk(missingIds, BATCH_SIZE);
+    setProgress({ done: 0, total: missingIds.length, current: `Bloc 1/${batches.length}` });
+
+    let processed = 0;
     try {
-      const res = await fetch("/api/ai/matrix-generate-all", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mission, refineInstructions: instructions.trim() || undefined }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? `Erreur ${res.status}`);
-      if (data.skipped) {
-        setError(data.skipped);
-        return;
+      for (let i = 0; i < batches.length; i++) {
+        if (cancelRef.current) {
+          setError("Génération annulée.");
+          break;
+        }
+        const batch = batches[i];
+        setProgress({ done: processed, total: missingIds.length, current: `Bloc ${i + 1}/${batches.length} — ${batch.length} question${batch.length > 1 ? "s" : ""}` });
+
+        const res = await fetch("/api/ai/matrix-generate-all", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mission, questionIds: batch, refineInstructions: instructions.trim() || undefined }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? `Erreur ${res.status}`);
+        if (Array.isArray(data.answers) && data.answers.length > 0) {
+          onApply(data.answers);
+          processed += data.answers.length;
+          setProgress({ done: processed, total: missingIds.length, current: `Bloc ${i + 1}/${batches.length} — terminé` });
+        }
       }
-      onApply(data.answers);
-      setOpen(false);
-      setInstructions("");
+      if (!cancelRef.current && processed === missingIds.length) {
+        setOpen(false);
+        setInstructions("");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur");
     } finally {
       setBusy(false);
+      setProgress(null);
     }
+  }
+
+  function cancel() {
+    cancelRef.current = true;
   }
 
   return (
@@ -199,39 +253,106 @@ function BulkGenerateBar({
         </div>
       </CardContent>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(v) => { if (!busy) setOpen(v); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Génération en lot</DialogTitle>
             <DialogDescription>
-              L'IA va remplir les <strong>{counts.empty}</strong> question{counts.empty > 1 ? "s" : ""} vide{counts.empty > 1 ? "s" : ""} en s'appuyant sur le contexte (documents, site, notes, matrice déjà remplie). Chaque réponse arrive en <span className="text-amber-700 font-medium">brouillon</span> — tu valides ensuite ligne par ligne.
+              L'IA remplit les <strong>{counts.empty}</strong> question{counts.empty > 1 ? "s" : ""} vide{counts.empty > 1 ? "s" : ""} en plusieurs blocs de {BATCH_SIZE} (pour rester dans les limites de timeout). Chaque réponse arrive en <span className="text-amber-700 font-medium">brouillon</span> — tu valides ensuite ligne par ligne ou par section.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-2">
-            <Label htmlFor="bulk-instructions">Instructions optionnelles</Label>
-            <Textarea
-              id="bulk-instructions"
-              rows={3}
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
-              placeholder="Ex. ton plus direct, focus sur le persona dirigeant, accentuer les douleurs financières…"
-              disabled={busy}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">~ 30s à 90s. Coût estimé : 5–15 ¢ pour la matrice complète (avec prompt caching).</p>
+          {!busy && (
+            <div className="grid gap-2">
+              <Label htmlFor="bulk-instructions">Instructions optionnelles</Label>
+              <Textarea
+                id="bulk-instructions"
+                rows={3}
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value)}
+                placeholder="Ex. ton plus direct, focus sur le persona dirigeant, accentuer les douleurs financières…"
+              />
+              <p className="text-xs text-muted-foreground">~ 60 à 120 s au total. Coût estimé : 5–15 ¢ par mission complète (avec prompt caching).</p>
+            </div>
+          )}
+          {progress && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">{progress.current}</span>
+                <span className="tabular-nums text-muted-foreground">{progress.done}/{progress.total} questions</span>
+              </div>
+              <Progress value={Math.round((progress.done / progress.total) * 100)} />
+              <p className="text-xs text-muted-foreground">Les réponses apparaissent en direct dans la matrice. Tu peux annuler à tout moment, le travail déjà généré reste.</p>
+            </div>
+          )}
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex justify-end gap-2">
-            <DialogClose asChild>
-              <Button variant="ghost" disabled={busy}>Annuler</Button>
-            </DialogClose>
-            <Button onClick={generate} disabled={busy} variant="accent">
-              {busy ? <><Loader2 className="animate-spin" /> Génération…</> : <><Sparkles /> Lancer la génération</>}
-            </Button>
+            {!busy && (
+              <DialogClose asChild>
+                <Button variant="ghost">Annuler</Button>
+              </DialogClose>
+            )}
+            {busy ? (
+              <Button onClick={cancel} variant="outline"><StopCircle /> Stopper</Button>
+            ) : (
+              <Button onClick={generate} variant="accent">
+                <Sparkles /> Lancer la génération
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
     </Card>
   );
+}
+
+/** Auto-resize textarea — grows with content, no scrollbar. */
+function AutoTextarea({ value, onChange, ...props }: React.ComponentProps<typeof Textarea>) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.style.height = "auto";
+      ref.current.style.height = `${ref.current.scrollHeight + 2}px`;
+    }
+  }, [value]);
+  return <Textarea ref={ref} value={value} onChange={onChange} {...props} className={`resize-none overflow-hidden ${props.className ?? ""}`} />;
+}
+
+/** Render markdown-ish bullet list and paragraphs. */
+function AnswerPreview({ text }: { text: string }) {
+  const lines = text.split("\n");
+  const blocks: React.ReactNode[] = [];
+  let bulletGroup: string[] = [];
+
+  function flushBullets() {
+    if (bulletGroup.length === 0) return;
+    blocks.push(
+      <ul key={`b-${blocks.length}`} className="space-y-1.5 my-1">
+        {bulletGroup.map((b, i) => (
+          <li key={i} className="flex gap-2.5 leading-relaxed">
+            <span className="text-accent shrink-0 mt-[0.4em] h-1.5 w-1.5 rounded-full bg-accent" aria-hidden />
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>,
+    );
+    bulletGroup = [];
+  }
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    const bullet = line.match(/^[-•*]\s+(.+)$/);
+    if (bullet) {
+      bulletGroup.push(bullet[1]);
+    } else if (line.length === 0) {
+      flushBullets();
+    } else {
+      flushBullets();
+      blocks.push(<p key={`p-${blocks.length}`} className="my-1 leading-relaxed">{line}</p>);
+    }
+  }
+  flushBullets();
+
+  return <div className="text-sm">{blocks}</div>;
 }
 
 function MatrixRow({
@@ -255,6 +376,7 @@ function MatrixRow({
   const [error, setError] = useState<string | null>(null);
   const [instructions, setInstructions] = useState("");
   const [mode, setMode] = useState<"draft" | "refine">(answer.trim() ? "refine" : "draft");
+  const [editing, setEditing] = useState(!answer.trim());
 
   async function callAi() {
     setBusy(true);
@@ -282,12 +404,13 @@ function MatrixRow({
       setAiOpen(false);
       setDraft(null);
       setInstructions("");
+      setEditing(false);
     }
   }
 
   const cardClass =
     status === "draft" ? "border-amber-300 bg-amber-50/40"
-    : status === "validated" ? "border-emerald-200/60"
+    : status === "validated" ? "border-emerald-200/70"
     : "";
 
   return (
@@ -331,12 +454,26 @@ function MatrixRow({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <Textarea
-          value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
-          placeholder="Réponse co-construite avec le client…"
-          rows={4}
-        />
+        {editing || !answer.trim() ? (
+          <AutoTextarea
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            onBlur={() => { if (answer.trim()) setEditing(false); }}
+            placeholder="Réponse co-construite avec le client. Liste à puces : commence chaque ligne par « - »."
+            rows={4}
+            autoFocus={editing}
+            className="leading-relaxed"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="w-full text-left rounded-md border border-input bg-card px-4 py-3 hover:border-accent/40 hover:bg-secondary/30 transition-colors cursor-text"
+            aria-label="Modifier la réponse"
+          >
+            <AnswerPreview text={answer} />
+          </button>
+        )}
         {status === "draft" && (
           <div className="flex items-center justify-between gap-2 -mt-1">
             <p className="text-xs text-amber-700">Brouillon IA — relis et valide.</p>
@@ -377,7 +514,7 @@ function MatrixRow({
                 id="instructions"
                 value={instructions}
                 onChange={(e) => setInstructions(e.target.value)}
-                placeholder="Plus court, plus concret, ajouter un exemple…"
+                placeholder="Plus court, plus concret, mettre en bullet points…"
               />
             </div>
           )}
@@ -395,7 +532,9 @@ function MatrixRow({
           {error && <p className="text-sm text-destructive">{error}</p>}
           {draft && (
             <>
-              <div className="rounded-md border bg-secondary/40 p-4 text-sm whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto">{draft}</div>
+              <div className="rounded-md border bg-secondary/40 p-4 text-sm leading-relaxed max-h-80 overflow-y-auto">
+                <AnswerPreview text={draft} />
+              </div>
               <div className="flex justify-end gap-2">
                 <DialogClose asChild>
                   <Button variant="ghost"><X /> Ignorer</Button>

@@ -54,7 +54,8 @@ L'app tourne sur http://localhost:3000. La première visite te redirige sur `/lo
 | `ANTHROPIC_API_KEY` | ✅ | Clé API Anthropic |
 | `ANTHROPIC_MODEL` | optionnel | Default : `claude-opus-4-7`. `claude-sonnet-4-6` pour ~3× moins cher. |
 | `NEXT_PUBLIC_SUPABASE_URL` | ✅ | URL projet Supabase |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ✅ | Clé anon publique Supabase |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | ✅ | Clé publishable Supabase (nouveau format `sb_publishable_…`) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | optionnel | Ancien format JWT, accepté en fallback si la publishable n'est pas définie |
 | `NEXT_PUBLIC_APP_URL` | optionnel | URL publique de l'app |
 
 ## Modèle d'auth & permissions

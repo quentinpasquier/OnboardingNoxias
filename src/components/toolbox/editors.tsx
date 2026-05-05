@@ -1,169 +1,12 @@
 "use client";
-import { useState } from "react";
-import { Sparkles, Loader2, RefreshCw, AlertTriangle, Users, MessageSquare, Phone, Shield, Target } from "lucide-react";
-import type { Mission } from "@/types/mission";
-import type { MissionUpdater } from "@/hooks/use-mission";
 import type { Toolbox } from "@/lib/toolbox-schema";
-import { MATRIX_QUESTIONS } from "@/lib/matrix-questions";
-import { Button } from "@/components/ui/button";
+import { OBJECTION_CATEGORIES } from "@/lib/toolbox-schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { OBJECTION_CATEGORIES } from "@/lib/toolbox-schema";
 
-export function ToolboxPanel({ mission, update }: { mission: Mission; update: (u: MissionUpdater) => void }) {
-  const answered = Object.values(mission.matrix).filter((v) => v && v.trim().length > 0).length;
-  const ratio = answered / MATRIX_QUESTIONS.length;
-
-  if (!mission.toolbox) return <ToolboxEmpty mission={mission} update={update} ratio={ratio} answered={answered} />;
-  return <ToolboxView mission={mission} update={update} />;
-}
-
-function ToolboxEmpty({ mission, update, ratio, answered }: { mission: Mission; update: (u: MissionUpdater) => void; ratio: number; answered: number }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [instructions, setInstructions] = useState("");
-
-  async function generate() {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/ai/generate-toolbox", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mission, refineInstructions: instructions.trim() || undefined }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? `Erreur ${res.status}`);
-      update((prev) => ({ ...prev, toolbox: data.toolbox as Toolbox }));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const lowMatrix = ratio < 0.5;
-
-  return (
-    <Card className="max-w-3xl mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Génération de la boîte à outils</CardTitle>
-        <CardDescription>L'IA construit personas, argumentaires, pitch ramifié, 30 objections et matrice de qualification, à partir de la matrice et du contexte client.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        {lowMatrix && (
-          <div className="flex items-start gap-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm">
-            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-            <div>
-              <p className="font-medium text-amber-900">Matrice peu remplie ({answered}/{MATRIX_QUESTIONS.length})</p>
-              <p className="text-amber-800">L'IA peut générer mais le résultat sera moins ancré. Idéal : ≥ 20 réponses.</p>
-            </div>
-          </div>
-        )}
-        <div>
-          <label className="text-sm font-medium block mb-1.5">Instructions optionnelles</label>
-          <Textarea
-            placeholder="Ex. ton plus direct, prioriser le persona dirigeant, accentuer l'objection budget…"
-            rows={3}
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
-          />
-        </div>
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        <div className="flex items-center justify-between pt-2 border-t">
-          <p className="text-xs text-muted-foreground">~30s à 2 min selon la richesse du contexte. Coût estimé : 5–15 ¢ par génération.</p>
-          <Button onClick={generate} disabled={busy} variant="accent" size="lg">
-            {busy ? <><Loader2 className="animate-spin" /> Génération…</> : <><Sparkles /> Générer la boîte à outils</>}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ToolboxView({ mission, update }: { mission: Mission; update: (u: MissionUpdater) => void }) {
-  const tb = mission.toolbox!;
-  const [busy, setBusy] = useState(false);
-  const [refineOpen, setRefineOpen] = useState(false);
-  const [refineText, setRefineText] = useState("");
-
-  async function regenerate() {
-    setBusy(true);
-    try {
-      const res = await fetch("/api/ai/generate-toolbox", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mission, refineInstructions: refineText.trim() || undefined }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      update((prev) => ({ ...prev, toolbox: data.toolbox as Toolbox }));
-      setRefineOpen(false);
-      setRefineText("");
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Erreur");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function patch<K extends keyof Toolbox>(key: K, value: Toolbox[K]) {
-    update((prev) => ({ ...prev, toolbox: prev.toolbox ? { ...prev.toolbox, [key]: value } : prev.toolbox }));
-  }
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-lg border bg-card">
-        <div>
-          <h3 className="font-display text-lg font-medium">Boîte à outils générée</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">Tous les blocs sont éditables. Tu peux régénérer avec des instructions ciblées.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {refineOpen ? (
-            <div className="flex items-center gap-2">
-              <input
-                value={refineText}
-                onChange={(e) => setRefineText(e.target.value)}
-                placeholder="Ex. ton plus premium, raccourcir le pitch 1.1…"
-                className="h-9 px-3 rounded-md border border-input bg-card text-sm w-72"
-                autoFocus
-              />
-              <Button onClick={regenerate} disabled={busy} variant="accent" size="sm">
-                {busy ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-                Régénérer
-              </Button>
-              <Button onClick={() => setRefineOpen(false)} variant="ghost" size="sm" disabled={busy}>Annuler</Button>
-            </div>
-          ) : (
-            <Button onClick={() => setRefineOpen(true)} variant="outline" size="sm"><RefreshCw /> Régénérer</Button>
-          )}
-        </div>
-      </div>
-
-      <Tabs defaultValue="positioning">
-        <TabsList className="bg-secondary/60 flex-wrap h-auto">
-          <TabsTrigger value="positioning"><Target className="h-4 w-4 mr-1.5" /> Positionnement</TabsTrigger>
-          <TabsTrigger value="personas"><Users className="h-4 w-4 mr-1.5" /> Personas ({tb.personas.length})</TabsTrigger>
-          <TabsTrigger value="arguments"><MessageSquare className="h-4 w-4 mr-1.5" /> Arguments</TabsTrigger>
-          <TabsTrigger value="pitch"><Phone className="h-4 w-4 mr-1.5" /> Pitch V1</TabsTrigger>
-          <TabsTrigger value="objections"><Shield className="h-4 w-4 mr-1.5" /> Objections (30)</TabsTrigger>
-          <TabsTrigger value="qualification">Qualification</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="positioning"><PositioningEditor value={tb.positioning} onChange={(v) => patch("positioning", v)} /></TabsContent>
-        <TabsContent value="personas"><PersonasEditor value={tb.personas} onChange={(v) => patch("personas", v)} /></TabsContent>
-        <TabsContent value="arguments"><ArgumentsEditor tb={tb} patch={patch} /></TabsContent>
-        <TabsContent value="pitch"><PitchEditor value={tb.pitch} onChange={(v) => patch("pitch", v)} /></TabsContent>
-        <TabsContent value="objections"><ObjectionsEditor value={tb.objections} onChange={(v) => patch("objections", v)} /></TabsContent>
-        <TabsContent value="qualification"><QualificationEditor value={tb.qualification} onChange={(v) => patch("qualification", v)} /></TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-function PositioningEditor({ value, onChange }: { value: Toolbox["positioning"]; onChange: (v: Toolbox["positioning"]) => void }) {
+export function PositioningEditor({ value, onChange }: { value: Toolbox["positioning"]; onChange: (v: Toolbox["positioning"]) => void }) {
   const longFields: { key: keyof Toolbox["positioning"]; label: string; rows: number }[] = [
     { key: "intro", label: "Introduction / cadrage (4–6 paragraphes)", rows: 12 },
     { key: "promise", label: "Promesse centrale", rows: 2 },
@@ -216,7 +59,7 @@ function PositioningEditor({ value, onChange }: { value: Toolbox["positioning"];
       <Card className="lg:col-span-2">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm">Irritants — questions à poser au prospect</CardTitle>
-          <CardDescription>Pour ouvrir l'échange sans pitcher. Remplace « Nous créons des sites… » par « Comment gérez-vous … ? ».</CardDescription>
+          <CardDescription>Pour ouvrir l'échange sans pitcher.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           {(value.irritants ?? []).map((p, i) => (
@@ -240,7 +83,15 @@ function PositioningEditor({ value, onChange }: { value: Toolbox["positioning"];
   );
 }
 
-function PersonasEditor({ value, onChange }: { value: Toolbox["personas"]; onChange: (v: Toolbox["personas"]) => void }) {
+const PERSONA_FIELD_LABEL: Record<string, string> = {
+  profile: "Profil",
+  kpis: "KPI",
+  pains: "Douleurs",
+  motivations: "Motivations",
+  triggers: "Déclencheurs d'achat",
+};
+
+export function PersonasEditor({ value, onChange }: { value: Toolbox["personas"]; onChange: (v: Toolbox["personas"]) => void }) {
   return (
     <div className="space-y-4">
       {value.map((p, i) => (
@@ -259,7 +110,7 @@ function PersonasEditor({ value, onChange }: { value: Toolbox["personas"]; onCha
           <CardContent className="grid md:grid-cols-2 gap-3">
             {(["profile", "kpis", "pains", "motivations", "triggers"] as const).map((k) => (
               <div key={k} className={k === "profile" ? "md:col-span-2" : ""}>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{labelFor(k)}</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">{PERSONA_FIELD_LABEL[k]}</p>
                 <Textarea
                   rows={k === "profile" ? 4 : 3}
                   value={p[k]}
@@ -278,31 +129,36 @@ function PersonasEditor({ value, onChange }: { value: Toolbox["personas"]; onCha
   );
 }
 
-function labelFor(k: string) {
-  const map: Record<string, string> = { profile: "Profil", kpis: "KPI", pains: "Douleurs", motivations: "Motivations", triggers: "Déclencheurs d'achat" };
-  return map[k] ?? k;
-}
-
-function ArgumentsEditor({ tb, patch }: { tb: Toolbox; patch: <K extends keyof Toolbox>(k: K, v: Toolbox[K]) => void }) {
+export function ArgumentsEditor({
+  disqualified,
+  killerArguments,
+  setDisqualified,
+  setKillerArguments,
+}: {
+  disqualified: string;
+  killerArguments: Toolbox["killerArguments"];
+  setDisqualified: (s: string) => void;
+  setKillerArguments: (v: Toolbox["killerArguments"]) => void;
+}) {
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Profils à disqualifier</CardTitle></CardHeader>
         <CardContent>
-          <Textarea rows={4} value={tb.disqualified} onChange={(e) => patch("disqualified", e.target.value)} />
+          <Textarea rows={4} value={disqualified} onChange={(e) => setDisqualified(e.target.value)} />
         </CardContent>
       </Card>
       <div className="grid md:grid-cols-2 gap-3">
-        {tb.killerArguments.map((a, i) => (
+        {killerArguments.map((a, i) => (
           <Card key={i}>
             <CardHeader className="pb-2">
               <input
                 className="font-display text-base w-full bg-transparent focus:outline-none italic"
                 value={a.headline}
                 onChange={(e) => {
-                  const next = [...tb.killerArguments];
+                  const next = [...killerArguments];
                   next[i] = { ...a, headline: e.target.value };
-                  patch("killerArguments", next);
+                  setKillerArguments(next);
                 }}
               />
             </CardHeader>
@@ -311,9 +167,9 @@ function ArgumentsEditor({ tb, patch }: { tb: Toolbox; patch: <K extends keyof T
                 rows={4}
                 value={a.body}
                 onChange={(e) => {
-                  const next = [...tb.killerArguments];
+                  const next = [...killerArguments];
                   next[i] = { ...a, body: e.target.value };
-                  patch("killerArguments", next);
+                  setKillerArguments(next);
                 }}
               />
             </CardContent>
@@ -324,7 +180,7 @@ function ArgumentsEditor({ tb, patch }: { tb: Toolbox; patch: <K extends keyof T
   );
 }
 
-function PitchEditor({ value, onChange }: { value: Toolbox["pitch"]; onChange: (v: Toolbox["pitch"]) => void }) {
+export function PitchEditor({ value, onChange }: { value: Toolbox["pitch"]; onChange: (v: Toolbox["pitch"]) => void }) {
   return (
     <div className="space-y-5">
       {value.map((section, sIdx) => (
@@ -367,10 +223,10 @@ function PitchEditor({ value, onChange }: { value: Toolbox["pitch"]; onChange: (
   );
 }
 
-function ObjectionsEditor({ value, onChange }: { value: Toolbox["objections"]; onChange: (v: Toolbox["objections"]) => void }) {
+export function ObjectionsEditor({ value, onChange }: { value: Toolbox["objections"]; onChange: (v: Toolbox["objections"]) => void }) {
   const grouped = OBJECTION_CATEGORIES.map((cat) => ({
     ...cat,
-    items: value.filter((o) => o.category === cat.code),
+    items: value.filter((o) => o.category === cat.code).sort((a, b) => a.id - b.id),
   }));
   return (
     <div className="space-y-6">
@@ -414,7 +270,7 @@ function ObjectionsEditor({ value, onChange }: { value: Toolbox["objections"]; o
   );
 }
 
-function QualificationEditor({ value, onChange }: { value: Toolbox["qualification"]; onChange: (v: Toolbox["qualification"]) => void }) {
+export function QualificationEditor({ value, onChange }: { value: Toolbox["qualification"]; onChange: (v: Toolbox["qualification"]) => void }) {
   return (
     <div className="space-y-5">
       <Card>
@@ -433,8 +289,8 @@ function QualificationEditor({ value, onChange }: { value: Toolbox["qualificatio
               {value.criteria.map((c, i) => (
                 <tr key={i} className="border-b last:border-0 align-top">
                   <td className="py-3 pr-3 font-medium">{c.label}</td>
-                  {(["score0", "score1", "score2"] as const).map((sk, sIdx) => (
-                    <td key={sk} className={sIdx === 0 ? "py-3 px-3" : sIdx === 2 ? "py-3 pl-3" : "py-3 px-3"}>
+                  {(["score0", "score1", "score2"] as const).map((sk) => (
+                    <td key={sk} className="py-3 px-3">
                       <Textarea
                         rows={3}
                         value={c[sk]}

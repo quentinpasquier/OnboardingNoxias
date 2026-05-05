@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Upload, Globe, FileText, Trash2, Loader2, StickyNote } from "lucide-react";
 import type { Mission, MissionFile } from "@/types/mission";
+import type { MissionUpdater } from "@/hooks/use-mission";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 
-export function ContextPanel({ mission, update }: { mission: Mission; update: (m: Mission) => void }) {
+export function ContextPanel({ mission, update }: { mission: Mission; update: (u: MissionUpdater) => void }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pasteName, setPasteName] = useState("");
@@ -20,7 +21,7 @@ export function ContextPanel({ mission, update }: { mission: Mission; update: (m
 
   function addFile(name: string, excerpt: string) {
     const f: MissionFile = { id: crypto.randomUUID(), name, excerpt, addedAt: new Date().toISOString() };
-    update({ ...mission, files: [...mission.files, f] });
+    update((prev) => ({ ...prev, files: [...prev.files, f] }));
   }
 
   async function onPdfUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -56,7 +57,7 @@ export function ContextPanel({ mission, update }: { mission: Mission; update: (m
       if (!res.ok) throw new Error(`Erreur scrape (${res.status})`);
       const { text, title } = await res.json();
       addFile(`Site web — ${title || scrapeUrl}`, text);
-      if (!mission.clientWebsite) update({ ...mission, clientWebsite: scrapeUrl.trim() });
+      update((prev) => prev.clientWebsite ? prev : { ...prev, clientWebsite: scrapeUrl.trim() });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur");
     } finally {
@@ -73,11 +74,11 @@ export function ContextPanel({ mission, update }: { mission: Mission; update: (m
   }
 
   function removeFile(id: string) {
-    update({ ...mission, files: mission.files.filter((f) => f.id !== id) });
+    update((prev) => ({ ...prev, files: prev.files.filter((f) => f.id !== id) }));
   }
 
   function saveNotes() {
-    update({ ...mission, notes });
+    update((prev) => ({ ...prev, notes }));
   }
 
   return (

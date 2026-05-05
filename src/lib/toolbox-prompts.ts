@@ -172,7 +172,7 @@ export const TOOLBOX_USER_PROMPT = `Génère la boîte à outils complète du co
 
 **pitch** : EXACTEMENT 5 sections, ids dans cet ordre :
 - **"1.0"** — "Si barrage / accueil" — 3–5 scripts variants : standard, "C'est pour quoi ?", "il/elle n'est pas dispo", "demande de précision".
-- **"1.1"** — "Brise-glace / prise de contact avec le décideur" — 3–4 variants : standard, plus directe, plus impactante, + scripts pour gérer "on a déjà…", "encore un prestataire ?", "vous faites quoi exactement ?".
+- **"1.1"** — "Brise-glace / prise de contact avec le décideur" — 3–4 variants : standard, plus directe, plus impactante, + scripts pour gérer "on a déjà…", "encore un prestataire ?", "vous faites quoi exactement ?". **Inclus impérativement la mention d'un cas client réel** (nom, secteur, résultat chiffré ou anecdote) extrait de la question 31 de la matrice — pour crédibiliser dès la prise de contact.
 - **"2.0"** — "Réponse prospect — qualification de la situation actuelle" — 4 scripts pour chaque réponse type du prospect ("on gère en interne", "on a déjà un prestataire", "au cas par cas", "on réfléchit à faire évoluer").
 - **"3.0"** — "Questions de qualification — PAIN & KPI" — 1–2 scripts qui déroulent les vraies questions à poser (priorité actuelle, état du site/produit, coût actuel, engagement, satisfaction, etc. — adapté au métier).
 - **"4.0"** — "Pitch de réponse adapté — proposition de valeur" — **6 à 8 variants**, chacun déclenché par une douleur précise (variant = "Si douleur = …", text = la réplique commerciale).

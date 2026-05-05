@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { MATRIX_QUESTIONS } from "@/lib/matrix-questions";
 import { formatDate } from "@/lib/utils";
+import { DashboardLoadingSkeleton } from "@/components/skeletons/MissionLoadingSkeleton";
 
 export function Dashboard() {
   const [missions, setMissions] = useState<Mission[] | null>(null);
@@ -47,15 +48,17 @@ export function Dashboard() {
     }
   }
 
+  if (missions === null && !error) return <DashboardLoadingSkeleton />;
+
   return (
     <main className="container max-w-6xl py-12">
       <section className="mb-12 noxias-hero-glow rounded-2xl p-8 md:p-10 -mx-2">
-        <p className="text-xs uppercase tracking-[0.22em] text-noxias-muted mb-4 font-medium">Atelier prospection · co-construction client</p>
+        <p className="text-xs uppercase tracking-[0.22em] text-noxias-muted mb-4 font-medium">Co-construction client</p>
         <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight mb-4 max-w-3xl leading-[1.05] text-noxias-ink">
-          La matrice et la boîte à outils du commercial, <span className="text-accent">prêtes en 2 h</span>.
+          Onboarding client <span className="text-accent">Noxias</span>
         </h1>
         <p className="text-noxias-muted max-w-2xl text-base md:text-lg leading-relaxed">
-          Vous interviewez le client, l'IA structure, vous arbitrez. À la sortie : deux livrables actionnables, calés sur la méthode Noxias.
+          Deux ateliers structurés — Matrice de prospection puis Boîte à outils du commercial. L'IA propose, vous arbitrez avec votre client, les livrables sortent en deux clics.
         </p>
       </section>
 
@@ -116,11 +119,36 @@ export function Dashboard() {
         </Card>
       )}
 
-      {missions !== null && missions.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {missions.map((m) => <MissionCard key={m.id} mission={m} />)}
-        </div>
-      )}
+      {missions !== null && missions.length > 0 && (() => {
+        const inProgress = missions.filter((m) => m.status !== "completed");
+        const completed = missions.filter((m) => m.status === "completed");
+        return (
+          <div className="space-y-10">
+            <section>
+              <h3 className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-medium mb-3">
+                En cours · {inProgress.length}
+              </h3>
+              {inProgress.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">Aucun onboarding en cours.</p>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {inProgress.map((m) => <MissionCard key={m.id} mission={m} />)}
+                </div>
+              )}
+            </section>
+            {completed.length > 0 && (
+              <section>
+                <h3 className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-medium mb-3">
+                  Terminés · {completed.length}
+                </h3>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {completed.map((m) => <MissionCard key={m.id} mission={m} />)}
+                </div>
+              </section>
+            )}
+          </div>
+        );
+      })()}
     </main>
   );
 }
@@ -129,21 +157,33 @@ function MissionCard({ mission }: { mission: Mission }) {
   const answered = Object.values(mission.matrix).filter((v) => v && v.trim().length > 0).length;
   const matrixPct = Math.round((answered / MATRIX_QUESTIONS.length) * 100);
   const toolboxReady = !!mission.toolbox;
+  const completed = mission.status === "completed";
 
   return (
-    <Link href={`/missions/${mission.id}`} className="group">
-      <Card className="h-full hover:border-accent/50 hover:shadow-md transition-all">
+    <Link
+      href={`/missions/${mission.id}`}
+      target="_blank"
+      rel="noopener"
+      className="group"
+      title={`Ouvrir l'onboarding ${mission.clientName} dans un nouvel onglet`}
+    >
+      <Card className={`h-full hover:border-accent/50 hover:shadow-md transition-all ${completed ? "bg-secondary/40" : ""}`}>
         <CardHeader>
           <div className="flex items-start justify-between gap-2">
             <CardTitle className="group-hover:text-accent transition-colors">{mission.clientName}</CardTitle>
-            <Badge variant={toolboxReady ? "accent" : "secondary"}>{toolboxReady ? "Boîte prête" : "En cours"}</Badge>
+            <div className="flex flex-col items-end gap-1.5">
+              <Badge variant={completed ? "success" : "accent"}>
+                {completed ? "Terminé" : "En cours"}
+              </Badge>
+              {toolboxReady && !completed && <Badge variant="secondary" className="text-[10px]">Boîte prête</Badge>}
+            </div>
           </div>
           <CardDescription>{mission.clientWebsite || "—"}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-              <span>Matrice de prospection</span>
+              <span>Matrice</span>
               <span className="font-medium text-foreground">{answered}/{MATRIX_QUESTIONS.length}</span>
             </div>
             <Progress value={matrixPct} />

@@ -50,7 +50,24 @@ export function BackToHubButton({ missionId }: { missionId: string }) {
 }
 
 export function AtelierLoading() {
-  return <main className="container py-12"><p className="text-muted-foreground">Chargement…</p></main>;
+  return (
+    <main className="container max-w-7xl py-10">
+      <div className="animate-pulse">
+        <div className="h-3 w-32 bg-secondary rounded mb-4" />
+        <div className="h-9 w-72 bg-secondary rounded mb-2" />
+        <div className="h-4 w-96 bg-secondary/60 rounded mb-8" />
+        <div className="rounded-lg border bg-card p-6 mb-4 space-y-3">
+          <div className="h-4 w-1/3 bg-secondary rounded" />
+          <div className="h-3 w-2/3 bg-secondary/60 rounded" />
+          <div className="h-24 w-full bg-secondary/40 rounded" />
+        </div>
+        <div className="rounded-lg border bg-card p-6 space-y-3">
+          <div className="h-4 w-1/3 bg-secondary rounded" />
+          <div className="h-24 w-full bg-secondary/40 rounded" />
+        </div>
+      </div>
+    </main>
+  );
 }
 
 export function AtelierNotFound() {

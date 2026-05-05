@@ -1,19 +1,23 @@
 "use client";
+import { useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, FileText, ListChecks, Sparkles, Layers, CheckCircle2, FileEdit, FileQuestion } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, ListChecks, Sparkles, Layers, CheckCircle2, FileEdit, FileQuestion, RotateCcw, Flag } from "lucide-react";
 import { useMission } from "@/hooks/use-mission";
 import { MATRIX_QUESTIONS } from "@/lib/matrix-questions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { MissionLoadingSkeleton } from "@/components/skeletons/MissionLoadingSkeleton";
 
 export function MissionHub({ missionId }: { missionId: string }) {
-  const { mission } = useMission(missionId);
+  const { mission, update } = useMission(missionId);
 
-  if (mission === undefined) {
-    return <main className="container py-12"><p className="text-muted-foreground">Chargement…</p></main>;
-  }
+  useEffect(() => {
+    if (mission?.clientName) document.title = `${mission.clientName} — Onboarding Noxias`;
+  }, [mission?.clientName]);
+
+  if (mission === undefined) return <MissionLoadingSkeleton />;
   if (mission === null) {
     return (
       <main className="container py-12">
@@ -29,21 +33,32 @@ export function MissionHub({ missionId }: { missionId: string }) {
   const matrixPct = Math.round((answered / MATRIX_QUESTIONS.length) * 100);
   const toolboxReady = !!mission.toolbox;
   const toolboxScopeReady = answered >= Math.ceil(MATRIX_QUESTIONS.length * 0.6);
+  const completed = mission.status === "completed";
+
+  function toggleStatus() {
+    update((prev) => ({ ...prev, status: prev.status === "completed" ? "in_progress" : "completed" }));
+  }
 
   return (
     <main className="container max-w-6xl py-10">
       <div className="mb-10">
         <Link href="/" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-3">
-          <ArrowLeft className="h-3.5 w-3.5" /> Toutes les missions
+          <ArrowLeft className="h-3.5 w-3.5" /> Tous les onboardings
         </Link>
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
+          <div className="flex items-center gap-3 flex-wrap">
             <h1 className="font-display text-3xl font-bold tracking-tight">{mission.clientName}</h1>
-            {mission.clientWebsite && (
-              <a href={mission.clientWebsite} target="_blank" rel="noreferrer" className="text-sm text-muted-foreground hover:text-accent">{mission.clientWebsite}</a>
-            )}
+            <Badge variant={completed ? "success" : "accent"}>
+              {completed ? "Terminé" : "En cours"}
+            </Badge>
           </div>
+          <Button variant="outline" size="sm" onClick={toggleStatus}>
+            {completed ? <><RotateCcw /> Rouvrir l'onboarding</> : <><Flag /> Marquer comme terminé</>}
+          </Button>
         </div>
+        {mission.clientWebsite && (
+          <a href={mission.clientWebsite} target="_blank" rel="noreferrer" className="text-sm text-muted-foreground hover:text-accent mt-1 inline-block">{mission.clientWebsite}</a>
+        )}
       </div>
 
       <section className="mb-8">

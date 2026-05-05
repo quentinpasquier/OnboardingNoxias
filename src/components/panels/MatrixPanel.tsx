@@ -3,6 +3,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { Sparkles, Loader2, Check, X, Wand2, CheckCircle2, FileQuestion, FileEdit, StopCircle } from "lucide-react";
 import type { Mission } from "@/types/mission";
 import { MATRIX_QUESTIONS, CATEGORY_GROUPS } from "@/lib/matrix-questions";
+import type { MissionUpdater } from "@/hooks/use-mission";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 type Status = "draft" | "validated" | "empty";
-type MissionStatusMap = NonNullable<Mission["matrixStatus"]>;
 
 const BATCH_SIZE = 6;
 
@@ -29,7 +29,7 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
-export function MatrixPanel({ mission, update }: { mission: Mission; update: (m: Mission) => void }) {
+export function MatrixPanel({ mission, update }: { mission: Mission; update: (u: MissionUpdater) => void }) {
   const [activeGroup, setActiveGroup] = useState<string>(CATEGORY_GROUPS[0].label);
   const visibleIds = useMemo(
     () => CATEGORY_GROUPS.find((g) => g.label === activeGroup)?.ids ?? [],
@@ -48,42 +48,48 @@ export function MatrixPanel({ mission, update }: { mission: Mission; update: (m:
   }, [mission]);
 
   function setAnswer(id: number, value: string) {
-    const status: MissionStatusMap = { ...(mission.matrixStatus ?? {}) };
-    if (value.trim()) status[id] = "validated";
-    else delete status[id];
-    update({ ...mission, matrix: { ...mission.matrix, [id]: value }, matrixStatus: status });
+    update((prev) => {
+      const status = { ...(prev.matrixStatus ?? {}) };
+      if (value.trim()) status[id] = "validated";
+      else delete status[id];
+      return { ...prev, matrix: { ...prev.matrix, [id]: value }, matrixStatus: status };
+    });
   }
 
   function setStatus(id: number, s: "draft" | "validated") {
-    const status = { ...(mission.matrixStatus ?? {}) };
-    status[id] = s;
-    update({ ...mission, matrixStatus: status });
+    update((prev) => ({ ...prev, matrixStatus: { ...(prev.matrixStatus ?? {}), [id]: s } }));
   }
 
   function applyDraftAnswers(items: { id: number; text: string }[]) {
-    const matrix = { ...mission.matrix };
-    const status = { ...(mission.matrixStatus ?? {}) };
-    for (const a of items) {
-      matrix[a.id] = a.text;
-      status[a.id] = "draft";
-    }
-    update({ ...mission, matrix, matrixStatus: status });
+    update((prev) => {
+      const matrix = { ...prev.matrix };
+      const status = { ...(prev.matrixStatus ?? {}) };
+      for (const a of items) {
+        matrix[a.id] = a.text;
+        status[a.id] = "draft";
+      }
+      return { ...prev, matrix, matrixStatus: status };
+    });
   }
 
   function validateAllDrafts() {
-    const status = { ...(mission.matrixStatus ?? {}) };
-    for (const q of MATRIX_QUESTIONS) {
-      if (status[q.id] === "draft") status[q.id] = "validated";
-    }
-    update({ ...mission, matrixStatus: status });
+    update((prev) => {
+      const status = { ...(prev.matrixStatus ?? {}) };
+      for (const q of MATRIX_QUESTIONS) {
+        if (status[q.id] === "draft") status[q.id] = "validated";
+      }
+      return { ...prev, matrixStatus: status };
+    });
   }
 
   function validateSection(ids: number[]) {
-    const status = { ...(mission.matrixStatus ?? {}) };
-    for (const id of ids) {
-      if (mission.matrix[id]?.trim() && status[id] !== "validated") status[id] = "validated";
-    }
-    update({ ...mission, matrixStatus: status });
+    update((prev) => {
+      const status = { ...(prev.matrixStatus ?? {}) };
+      for (const id of ids) {
+        if (prev.matrix[id]?.trim() && status[id] !== "validated") status[id] = "validated";
+      }
+      return { ...prev, matrixStatus: status };
+    });
   }
 
   return (
@@ -180,6 +186,15 @@ function BulkGenerateBar({
     const batches = chunk(missingIds, BATCH_SIZE);
     setProgress({ done: 0, total: missingIds.length, current: `Bloc 1/${batches.length}` });
 
+    // Working copy : on accumule les réponses des blocs précédents
+    // pour que l'IA voie un contexte qui s'enrichit batch après batch,
+    // ET pour ne pas perdre de réponses si plusieurs batches sont en vol.
+    let workingMission: Mission = {
+      ...mission,
+      matrix: { ...mission.matrix },
+      matrixStatus: { ...(mission.matrixStatus ?? {}) },
+    };
+
     let processed = 0;
     try {
       for (let i = 0; i < batches.length; i++) {
@@ -193,14 +208,19 @@ function BulkGenerateBar({
         const res = await fetch("/api/ai/matrix-generate-all", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mission, questionIds: batch, refineInstructions: instructions.trim() || undefined }),
+          body: JSON.stringify({ mission: workingMission, questionIds: batch, refineInstructions: instructions.trim() || undefined }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? `Erreur ${res.status}`);
         if (Array.isArray(data.answers) && data.answers.length > 0) {
+          // Met à jour la copie locale ET l'état React (functional update)
+          for (const a of data.answers) {
+            workingMission.matrix[a.id] = a.text;
+            (workingMission.matrixStatus as Record<number, "draft" | "validated">)[a.id] = "draft";
+          }
           onApply(data.answers);
           processed += data.answers.length;
-          setProgress({ done: processed, total: missingIds.length, current: `Bloc ${i + 1}/${batches.length} — terminé` });
+          setProgress({ done: processed, total: missingIds.length, current: `Bloc ${i + 1}/${batches.length} — ${processed}/${missingIds.length} appliquées` });
         }
       }
       if (!cancelRef.current && processed === missingIds.length) {

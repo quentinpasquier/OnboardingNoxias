@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Sparkles, Loader2, RefreshCw, AlertTriangle, Users, MessageSquare, Phone, Shield, Target } from "lucide-react";
 import type { Mission } from "@/types/mission";
+import type { MissionUpdater } from "@/hooks/use-mission";
 import type { Toolbox } from "@/lib/toolbox-schema";
 import { MATRIX_QUESTIONS } from "@/lib/matrix-questions";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OBJECTION_CATEGORIES } from "@/lib/toolbox-schema";
 
-export function ToolboxPanel({ mission, update }: { mission: Mission; update: (m: Mission) => void }) {
+export function ToolboxPanel({ mission, update }: { mission: Mission; update: (u: MissionUpdater) => void }) {
   const answered = Object.values(mission.matrix).filter((v) => v && v.trim().length > 0).length;
   const ratio = answered / MATRIX_QUESTIONS.length;
 
@@ -19,7 +20,7 @@ export function ToolboxPanel({ mission, update }: { mission: Mission; update: (m
   return <ToolboxView mission={mission} update={update} />;
 }
 
-function ToolboxEmpty({ mission, update, ratio, answered }: { mission: Mission; update: (m: Mission) => void; ratio: number; answered: number }) {
+function ToolboxEmpty({ mission, update, ratio, answered }: { mission: Mission; update: (u: MissionUpdater) => void; ratio: number; answered: number }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [instructions, setInstructions] = useState("");
@@ -35,7 +36,7 @@ function ToolboxEmpty({ mission, update, ratio, answered }: { mission: Mission; 
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? `Erreur ${res.status}`);
-      update({ ...mission, toolbox: data.toolbox as Toolbox });
+      update((prev) => ({ ...prev, toolbox: data.toolbox as Toolbox }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur");
     } finally {
@@ -82,7 +83,7 @@ function ToolboxEmpty({ mission, update, ratio, answered }: { mission: Mission; 
   );
 }
 
-function ToolboxView({ mission, update }: { mission: Mission; update: (m: Mission) => void }) {
+function ToolboxView({ mission, update }: { mission: Mission; update: (u: MissionUpdater) => void }) {
   const tb = mission.toolbox!;
   const [busy, setBusy] = useState(false);
   const [refineOpen, setRefineOpen] = useState(false);
@@ -98,7 +99,7 @@ function ToolboxView({ mission, update }: { mission: Mission; update: (m: Missio
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      update({ ...mission, toolbox: data.toolbox as Toolbox });
+      update((prev) => ({ ...prev, toolbox: data.toolbox as Toolbox }));
       setRefineOpen(false);
       setRefineText("");
     } catch (err) {
@@ -109,7 +110,7 @@ function ToolboxView({ mission, update }: { mission: Mission; update: (m: Missio
   }
 
   function patch<K extends keyof Toolbox>(key: K, value: Toolbox[K]) {
-    update({ ...mission, toolbox: { ...tb, [key]: value } });
+    update((prev) => ({ ...prev, toolbox: prev.toolbox ? { ...prev.toolbox, [key]: value } : prev.toolbox }));
   }
 
   return (

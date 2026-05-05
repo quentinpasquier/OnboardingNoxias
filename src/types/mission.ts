@@ -10,6 +10,8 @@ export type MissionFile = {
 export type MatrixAnswers = Record<number, string>; // questionId -> answer
 export type MatrixStatus = Record<number, "draft" | "validated">; // questionId -> status
 
+export type MissionStatus = "in_progress" | "completed";
+
 export type Mission = {
   id: string;
   clientName: string;
@@ -19,6 +21,7 @@ export type Mission = {
   matrix: MatrixAnswers;
   matrixStatus?: MatrixStatus;
   toolbox: Toolbox | null;
+  status?: MissionStatus;
   createdAt: string;
   updatedAt: string;
 };
@@ -32,6 +35,7 @@ export const emptyMission = (clientName: string): Mission => {
     matrix: {},
     matrixStatus: {},
     toolbox: null,
+    status: "in_progress",
     createdAt: now,
     updatedAt: now,
   };

@@ -1,6 +1,6 @@
 "use client";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { Mission, MissionFile, MatrixAnswers, MatrixStatus } from "@/types/mission";
+import type { Mission, MissionFile, MatrixAnswers, MatrixStatus, MissionStatus } from "@/types/mission";
 import type { Toolbox } from "@/lib/toolbox-schema";
 
 type Row = {
@@ -12,6 +12,7 @@ type Row = {
   matrix: MatrixAnswers;
   matrix_status: MatrixStatus;
   toolbox: Toolbox | null;
+  status: MissionStatus | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -27,6 +28,7 @@ function rowToMission(r: Row): Mission {
     matrix: r.matrix ?? {},
     matrixStatus: r.matrix_status ?? {},
     toolbox: r.toolbox,
+    status: r.status ?? "in_progress",
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -42,6 +44,7 @@ function missionToRow(m: Mission, userId?: string): Partial<Row> {
     matrix: m.matrix,
     matrix_status: m.matrixStatus ?? {},
     toolbox: m.toolbox,
+    status: m.status ?? "in_progress",
     ...(userId ? { created_by: userId } : {}),
   };
 }

@@ -1,9 +1,9 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { Download, FileText, FileSpreadsheet, FileType, Printer, ExternalLink, Loader2 } from "lucide-react";
+import { Download, FileText, FileSpreadsheet, Printer, ExternalLink, Loader2 } from "lucide-react";
 import type { Mission } from "@/types/mission";
-import { missionToMarkdown, downloadFile, type ExportScope } from "@/lib/exporters";
+import type { ExportScope } from "@/lib/exporters";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { slugify } from "@/lib/utils";
@@ -12,11 +12,6 @@ export function ExportPanel({ mission, scope = "both" }: { mission: Mission; sco
   const [busy, setBusy] = useState<string | null>(null);
   const slug = slugify(mission.clientName);
   const suffix = scope === "matrix" ? "matrice" : scope === "toolbox" ? "boite-a-outils" : "prospection";
-
-  function exportMd() {
-    const md = missionToMarkdown(mission, { scope });
-    downloadFile(`${slug}-${suffix}.md`, md, "text/markdown;charset=utf-8");
-  }
 
   async function exportDocx() {
     setBusy("docx");
@@ -74,17 +69,6 @@ export function ExportPanel({ mission, scope = "both" }: { mission: Mission; sco
 
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <Card>
-        <CardHeader>
-          <FileType className="h-6 w-6 text-accent mb-2" />
-          <CardTitle className="text-base">Markdown</CardTitle>
-          <CardDescription>Texte structuré, idéal pour Notion, GitHub ou re-traitement.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={exportMd} variant="outline" className="w-full"><Download /> .md</Button>
-        </CardContent>
-      </Card>
-
       <Card>
         <CardHeader>
           <FileText className="h-6 w-6 text-accent mb-2" />

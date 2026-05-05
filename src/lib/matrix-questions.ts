@@ -41,6 +41,7 @@ export const MATRIX_QUESTIONS: MatrixQuestion[] = [
   { id: 28, category: "11. L'offre irrésistible (Hook)", question: "Positionnement global ?" },
   { id: 29, category: "12. Historique / contexte", question: "Priorités de prospection ?" },
   { id: 30, category: "13. Cible(s) secondaire(s)", question: "Cibles secondaires & règles d'ouverture ?" },
+  { id: 31, category: "14. Cas clients & références", question: "Quels cas clients mobiliser pour rassurer en intro de pitch ?", hint: "3 à 5 cas concrets : nom du client, secteur, résultat chiffré ou anecdote utilisable. Sert à crédibiliser dès la prise de contact." },
 ];
 
 export const CATEGORY_GROUPS: { label: string; ids: number[] }[] = [
@@ -51,4 +52,5 @@ export const CATEGORY_GROUPS: { label: string; ids: number[] }[] = [
   { label: "Canaux & messages", ids: [20, 21, 22, 23] },
   { label: "Concurrence & mesure", ids: [24, 25, 26] },
   { label: "Positionnement", ids: [27, 28, 29, 30] },
+  { label: "Références", ids: [31] },
 ];

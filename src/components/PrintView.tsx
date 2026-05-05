@@ -34,157 +34,713 @@ export function PrintView({ missionId, scope = "both" }: { missionId: string; sc
     ? "Matrice de prospection"
     : scope === "toolbox"
       ? "Boîte à outils du commercial"
-      : "Livrables prospection";
+      : "Onboarding client — livrables prospection";
+
+  const today = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 
   return (
     <>
-      <style>{`
-        @media print {
-          .no-print { display: none !important; }
-          body { background: white !important; }
-          .page-break { page-break-before: always; }
-          h1, h2, h3 { page-break-after: avoid; }
-          .keep-together { page-break-inside: avoid; }
-        }
-        @page { margin: 18mm; }
-      `}</style>
+      <PrintStyles />
+
+      {/* Barre d'action (cachée à l'impression) */}
       <div className="no-print sticky top-0 z-10 bg-card border-b py-3">
-        <div className="container max-w-4xl flex items-center justify-between">
+        <div className="container max-w-5xl flex items-center justify-between">
           <NoxiasLogo />
-          <Button onClick={() => window.print()} variant="accent"><Printer /> Imprimer / Enregistrer en PDF</Button>
+          <Button onClick={() => window.print()} variant="accent" size="lg">
+            <Printer /> Imprimer / Enregistrer en PDF
+          </Button>
         </div>
       </div>
-      <main className="container max-w-4xl py-12 print:py-0 prose prose-stone max-w-none">
-        <header className="mb-12 pb-8 border-b">
-          <p className="text-xs uppercase tracking-[0.2em] text-accent mb-3">Noxias · Conseil prospection</p>
-          <h1 className="font-display text-4xl font-medium tracking-tight">{mission.clientName}</h1>
-          <p className="text-muted-foreground mt-2">{docTitle}</p>
-        </header>
 
-        {showMatrix && (
-          <section>
-            <h2 className="font-display text-2xl font-medium mb-6">Matrice de prospection</h2>
-            {MATRIX_QUESTIONS.map((q) => {
-              const a = mission.matrix[q.id]?.trim();
-              if (!a) return null;
-              return (
-                <div key={q.id} className="mb-6 keep-together">
-                  <p className="text-xs uppercase tracking-wider text-accent">{q.id}. {q.category}</p>
-                  <h3 className="font-display text-lg font-medium mt-1 mb-2">{q.question}</h3>
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{a}</p>
+      {/* PAGE DE GARDE */}
+      <section className="cover-page">
+        <div className="cover-inner">
+          <div className="cover-eyebrow">▶  NOXIAS</div>
+          <div className="cover-sub">ONBOARDING CLIENT</div>
+          <h1 className="cover-title">{mission.clientName}</h1>
+          <div className="cover-rule" />
+          <p className="cover-doctitle">{docTitle}</p>
+          <div className="cover-meta">
+            <p>{today}</p>
+            <p className="cover-conf">Document confidentiel — usage commercial Noxias</p>
+          </div>
+        </div>
+      </section>
+
+      {/* SOMMAIRE */}
+      <section className="page sommaire">
+        <p className="part-label">AU SOMMAIRE</p>
+        <hr className="rule-accent" />
+        <ol className="toc">
+          {showMatrix && <li><span className="toc-num">01.</span> Matrice de prospection</li>}
+          {showToolbox && (
+            <>
+              <li><span className="toc-num">{showMatrix ? "02." : "01."}</span> Boîte à outils du commercial</li>
+              <li><span className="toc-num">{showMatrix ? "03." : "02."}</span> Pitch V1</li>
+              <li><span className="toc-num">{showMatrix ? "04." : "03."}</span> Traitement des objections</li>
+              <li><span className="toc-num">{showMatrix ? "05." : "04."}</span> Matrice de qualification (R1)</li>
+            </>
+          )}
+        </ol>
+      </section>
+
+      {/* PARTIES */}
+      {showMatrix && (
+        <section className="page">
+          <PartHeader number={showMatrix ? "01" : "01"} label="PARTIE 01" title="Matrice de prospection" />
+          {MATRIX_QUESTIONS.map((q) => {
+            const a = mission.matrix[q.id]?.trim();
+            if (!a) return null;
+            return (
+              <article key={q.id} className="matrix-row">
+                <p className="matrix-cat">{q.id}. {q.category}</p>
+                <h3 className="matrix-q">{q.question}</h3>
+                <div className="matrix-a">
+                  {renderAnswer(a)}
                 </div>
-              );
-            })}
-          </section>
-        )}
+              </article>
+            );
+          })}
+        </section>
+      )}
 
-        {showToolbox && tb && (
-          <>
-            {showMatrix && <div className="page-break" />}
-            <section>
-              <h2 className="font-display text-2xl font-medium mb-6">Boîte à outils du commercial</h2>
+      {showToolbox && tb && (
+        <>
+          <section className="page page-break">
+            <PartHeader number={showMatrix ? "02" : "01"} label={`PARTIE 0${showMatrix ? "2" : "1"}`} title="Boîte à outils du commercial" />
 
-              <h3 className="font-display text-xl mb-3">Cadrage & positionnement</h3>
-              <div className="whitespace-pre-wrap mb-4">{tb.positioning.intro}</div>
-              <p><strong>Promesse centrale.</strong> {tb.positioning.promise}</p>
-              <p><strong>Services à mettre en avant.</strong> {tb.positioning.services}</p>
-              <p><strong>Cibles à prioriser.</strong> {tb.positioning.targets}</p>
-              <p><strong>Résultat tangible (30–60j).</strong> {tb.positioning.valueResult ?? "—"}</p>
-              <p><strong>Phrases à marteler.</strong></p>
-              <ul>{tb.positioning.phrases.map((p, i) => <li key={i}><em>« {p} »</em></li>)}</ul>
-              {tb.positioning.irritants?.length ? (
-                <>
-                  <p><strong>Questions d'ouverture (irritants).</strong></p>
-                  <ul>{tb.positioning.irritants.map((q, i) => <li key={i}>{q}</li>)}</ul>
-                </>
-              ) : null}
-              <p><strong>Positionnement final.</strong> {tb.positioning.finalAnchor}</p>
-
-              <h3 className="font-display text-xl mb-3 mt-8">Personas</h3>
-              {tb.personas.map((p, i) => (
-                <div key={i} className="keep-together mb-6">
-                  <h4 className="font-display text-lg">{p.title}</h4>
-                  <p><strong>Profil.</strong> <span className="whitespace-pre-wrap">{p.profile}</span></p>
-                  <p><strong>KPIs et métriques.</strong> {p.kpis}</p>
-                  <p><strong>Douleurs et freins.</strong> <span className="whitespace-pre-wrap">{p.pains}</span></p>
-                  <p><strong>Motivations.</strong> {p.motivations}</p>
-                  <p><strong>Déclencheurs d'achat.</strong> {p.triggers}</p>
-                </div>
+            <div className="intro-narrative">
+              {tb.positioning.intro.split(/\n\s*\n/).filter(Boolean).map((para, i) => (
+                <p key={i} className={i === 0 ? "drop-cap" : ""}>{para.trim()}</p>
               ))}
+            </div>
 
-              <h3 className="font-display text-xl mb-3 mt-8">Profils à disqualifier</h3>
-              <p className="whitespace-pre-wrap">{tb.disqualified}</p>
+            {tb.personas.map((p, i) => (
+              <article key={i} className="persona keep-together">
+                <h2 className="section-h2">{p.title}</h2>
+                <PersonaField label="Profil" value={p.profile} />
+                <PersonaField label="KPIs et métriques de décision" value={p.kpis} />
+                <PersonaField label="Douleurs et freins" value={p.pains} />
+                <PersonaField label="Motivations" value={p.motivations} />
+                <PersonaField label="Déclencheurs d'achat" value={p.triggers} />
+              </article>
+            ))}
 
-              <h3 className="font-display text-xl mb-3 mt-8">Argumentaires clés</h3>
+            <h2 className="section-h2">Profils à disqualifier</h2>
+            <div className="prose-block">{renderAnswer(tb.disqualified)}</div>
+
+            <h2 className="section-h2">Argumentaires clés</h2>
+            <div className="arguments-grid">
               {tb.killerArguments.map((a, i) => (
-                <div key={i} className="keep-together mb-4">
-                  <p className="italic text-accent">« {a.headline} »</p>
-                  <p className="whitespace-pre-wrap">{a.body}</p>
-                </div>
+                <article key={i} className="argument-card keep-together">
+                  <p className="argument-headline">« {a.headline} »</p>
+                  <div className="argument-body">{renderAnswer(a.body)}</div>
+                </article>
               ))}
+            </div>
 
-              <div className="page-break" />
-              <h3 className="font-display text-xl mb-3 mt-8">Pitch V1</h3>
-              {tb.pitch.map((s) => (
-                <div key={s.id} className="keep-together mb-6">
-                  <h4 className="font-display text-lg">({s.id}) {s.label}</h4>
-                  {s.scripts.map((sc, i) => (
-                    <div key={i} className="border-l-2 border-accent pl-4 my-3">
-                      <p className="text-xs uppercase tracking-wider text-accent">{sc.variant}</p>
-                      <p className="italic whitespace-pre-wrap">{sc.text}</p>
-                    </div>
-                  ))}
-                </div>
-              ))}
-
-              <div className="page-break" />
-              <h3 className="font-display text-xl mb-3">Traitement des 30 objections</h3>
-              {(["A", "B", "C", "D", "E"] as const).map((code) => (
-                <div key={code} className="mb-6">
-                  <h4 className="font-display text-lg">{code}. {OBJ_CATS[code]}</h4>
-                  {tb.objections.filter((o) => o.category === code).sort((a, b) => a.id - b.id).map((o) => (
-                    <div key={o.id} className="keep-together mb-3">
-                      <p className="font-medium italic text-accent">{o.id}. « {o.text} »</p>
-                      <p className="italic whitespace-pre-wrap">{o.response}</p>
-                    </div>
-                  ))}
-                </div>
-              ))}
-
-              <h3 className="font-display text-xl mb-3 mt-8">Matrice de qualification (R1)</h3>
-              <p className="text-sm text-muted-foreground italic mb-2">Lead « Qualifié pour R2 » si score ≥ 7/10. Cinq critères, chacun noté 0/1/2.</p>
-              <table className="w-full text-sm border-collapse">
-                <thead><tr className="bg-secondary">
-                  <th className="border p-2 text-left">Critère</th>
-                  <th className="border p-2 text-left">Score 0 (faible)</th>
-                  <th className="border p-2 text-left">Score 1 (moyen)</th>
-                  <th className="border p-2 text-left">Score 2 (élevé)</th>
-                </tr></thead>
-                <tbody>
-                  {tb.qualification.criteria.map((c, i) => (
-                    <tr key={i}>
-                      <td className="border p-2 font-medium">{c.label}</td>
-                      <td className="border p-2">{c.score0}</td>
-                      <td className="border p-2">{c.score1}</td>
-                      <td className="border p-2">{c.score2}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <div className="mt-4">
-                <p><strong>Tiers de leads.</strong></p>
-                {tb.qualification.tiers.map((t, i) => (
-                  <p key={i}><strong>{t.name} ({t.score}).</strong> {t.description} <em>Action : {t.action}</em></p>
-                ))}
+            {tb.positioning.irritants?.length ? (
+              <div className="callout">
+                <p className="callout-eyebrow">POURQUOI NOUS ?</p>
+                <p className="callout-title">Questions à poser pour ouvrir l'échange</p>
+                <ul className="callout-list">{tb.positioning.irritants.map((q, i) => <li key={i}>{q}</li>)}</ul>
               </div>
-            </section>
-          </>
-        )}
+            ) : null}
 
-        <footer className="mt-16 pt-6 border-t text-xs text-muted-foreground text-center">
-          Livrable produit avec Noxias Prospection Builder.
-        </footer>
-      </main>
+            <h2 className="section-h2">Services à mettre en avant</h2>
+            <p className="prose-block">{tb.positioning.services}</p>
+
+            <h2 className="section-h2">Cibles à prioriser en prospection</h2>
+            <p className="prose-block">{tb.positioning.targets}</p>
+
+            <div className="callout callout-promise">
+              <p className="callout-eyebrow">PROMESSE COMMERCIALE CENTRALE</p>
+              <p className="callout-text">{tb.positioning.promise}</p>
+            </div>
+
+            <h2 className="section-h2">Résultat concret promis (30–60 jours)</h2>
+            <div className="prose-block">{renderAnswer(tb.positioning.valueResult ?? "")}</div>
+
+            <h2 className="section-h2">Phrases à marteler</h2>
+            <ul className="phrases-list">
+              {tb.positioning.phrases.map((p, i) => <li key={i}><span className="phrase-quote">«</span> {p} <span className="phrase-quote">»</span></li>)}
+            </ul>
+
+            <div className="callout callout-anchor">
+              <p className="callout-eyebrow">POSITIONNEMENT FINAL À ANCRER</p>
+              <p className="callout-text">{tb.positioning.finalAnchor}</p>
+            </div>
+          </section>
+
+          {/* PITCH */}
+          <section className="page page-break">
+            <PartHeader number={showMatrix ? "03" : "02"} label={`PARTIE 0${showMatrix ? "3" : "2"}`} title="Pitch V1" />
+            <p className="part-intro">Trame d'entretien complète : passage du barrage, brise-glace décideur, qualification de la situation, questions PAIN & KPI, pitch de réponse adapté à la douleur identifiée et formulation de prise de RDV.</p>
+
+            {tb.pitch.map((s) => (
+              <article key={s.id} className="pitch-section keep-together">
+                <h2 className="section-h2"><span className="pitch-id">({s.id})</span> {s.label}</h2>
+                {s.scripts.map((sc, i) => (
+                  <div key={i} className="pitch-script">
+                    <p className="pitch-variant">{sc.variant}</p>
+                    <p className="pitch-text">{sc.text}</p>
+                  </div>
+                ))}
+              </article>
+            ))}
+          </section>
+
+          {/* OBJECTIONS */}
+          <section className="page page-break">
+            <PartHeader number={showMatrix ? "04" : "03"} label={`PARTIE 0${showMatrix ? "4" : "3"}`} title="Traitement des objections" />
+            <p className="part-intro">Cinq familles d'objections classiques : prestataires actuels & interne, budget & coût, temps & priorité, confiance & transparence, besoin & pertinence.</p>
+
+            {(["A", "B", "C", "D", "E"] as const).map((code) => (
+              <article key={code} className="objection-family keep-together">
+                <h2 className="section-h2"><span className="obj-code">{code}.</span> {OBJ_CATS[code]}</h2>
+                {tb.objections.filter((o) => o.category === code).sort((a, b) => a.id - b.id).map((o) => (
+                  <div key={o.id} className="objection keep-together">
+                    <p className="objection-quote"><span className="obj-num">{o.id}.</span> « {o.text} »</p>
+                    <p className="objection-response">{o.response}</p>
+                  </div>
+                ))}
+              </article>
+            ))}
+          </section>
+
+          {/* QUALIFICATION */}
+          <section className="page page-break">
+            <PartHeader number={showMatrix ? "05" : "04"} label={`PARTIE 0${showMatrix ? "5" : "4"}`} title="Matrice de qualification (R1)" />
+            <p className="part-intro">Lead « Qualifié pour R2 » si score ≥ 7/10. Cinq critères, chacun noté 0/1/2.</p>
+
+            <table className="qualif-table">
+              <thead>
+                <tr>
+                  <th>Critère</th>
+                  <th>Score 0 — faible</th>
+                  <th>Score 1 — moyen</th>
+                  <th>Score 2 — élevé</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tb.qualification.criteria.map((c, i) => (
+                  <tr key={i}>
+                    <th scope="row">{c.label}</th>
+                    <td>{c.score0}</td>
+                    <td>{c.score1}</td>
+                    <td>{c.score2}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <h2 className="section-h2">Tiers de leads</h2>
+            <div className="tiers-grid">
+              {tb.qualification.tiers.map((t, i) => {
+                const tierClass = i === 0 ? "tier-hot" : i === 1 ? "tier-warm" : "tier-cold";
+                return (
+                  <article key={i} className={`tier-card keep-together ${tierClass}`}>
+                    <p className="tier-eyebrow">{i === 0 ? "PRIORITÉ ABSOLUE" : i === 1 ? "À NOURRIR" : "DISQUALIFIÉ / NURTURING"}</p>
+                    <h3 className="tier-name">{t.name}</h3>
+                    <p className="tier-score">Score {t.score}</p>
+                    <p className="tier-desc">{t.description}</p>
+                    <p className="tier-action"><strong>Action :</strong> <em>{t.action}</em></p>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        </>
+      )}
+
+      <footer className="print-footer">
+        <p>▶  noxias  ·  {mission.clientName}  ·  {today}</p>
+      </footer>
     </>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Helpers
+// -----------------------------------------------------------------------------
+function PartHeader({ number, label, title }: { number: string; label: string; title: string }) {
+  return (
+    <header className="part-header">
+      <p className="part-num">{number}</p>
+      <p className="part-label">{label}</p>
+      <h1 className="part-title">{title}</h1>
+      <hr className="rule-accent" />
+    </header>
+  );
+}
+
+function PersonaField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="persona-field">
+      <h4>{label}</h4>
+      <div className="prose-block">{renderAnswer(value)}</div>
+    </div>
+  );
+}
+
+function renderAnswer(text: string): React.ReactNode {
+  const lines = text.split("\n");
+  const blocks: React.ReactNode[] = [];
+  let bulletGroup: string[] = [];
+  function flush() {
+    if (bulletGroup.length === 0) return;
+    blocks.push(<ul key={`b-${blocks.length}`} className="bullet-list">{bulletGroup.map((b, i) => <li key={i}>{b}</li>)}</ul>);
+    bulletGroup = [];
+  }
+  for (const raw of lines) {
+    const line = raw.trim();
+    const m = line.match(/^[-•*]\s+(.+)$/);
+    if (m) bulletGroup.push(m[1]);
+    else if (line.length === 0) flush();
+    else { flush(); blocks.push(<p key={`p-${blocks.length}`}>{line}</p>); }
+  }
+  flush();
+  return blocks;
+}
+
+// -----------------------------------------------------------------------------
+// Styles d'impression
+// -----------------------------------------------------------------------------
+function PrintStyles() {
+  return (
+    <style jsx global>{`
+      :root {
+        --noxias-print-ink: #000c1e;
+        --noxias-print-deep: #221932;
+        --noxias-print-accent: #3cc879;
+        --noxias-print-accent-light: #e8f8ef;
+        --noxias-print-accent-dark: #2fa566;
+        --noxias-print-paper: #ffffff;
+        --noxias-print-paper-alt: #f9fafb;
+        --noxias-print-muted: #6a7280;
+        --noxias-print-border: #e5e7eb;
+      }
+
+      @page { margin: 0; size: A4; }
+
+      body {
+        background: var(--noxias-print-paper-alt);
+        color: var(--noxias-print-ink);
+        font-family: var(--font-sans), Ubuntu, system-ui, sans-serif;
+      }
+
+      @media print {
+        body { background: white !important; }
+        .no-print { display: none !important; }
+        .page-break { page-break-before: always; break-before: page; }
+        .keep-together { page-break-inside: avoid; break-inside: avoid; }
+        h1, h2, h3 { page-break-after: avoid; break-after: avoid; }
+      }
+
+      /* PAGE DE GARDE */
+      .cover-page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32mm;
+        background:
+          radial-gradient(80% 60% at 100% 0%, var(--noxias-print-accent-light) 0%, transparent 60%),
+          radial-gradient(60% 40% at 0% 100%, rgba(34, 25, 50, 0.04) 0%, transparent 60%),
+          var(--noxias-print-paper);
+      }
+      @media print { .cover-page { min-height: 0; height: 100vh; } }
+      .cover-inner { max-width: 600px; text-align: center; }
+      .cover-eyebrow {
+        color: var(--noxias-print-accent);
+        font-weight: 700;
+        letter-spacing: 0.3em;
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+      .cover-sub {
+        color: var(--noxias-print-deep);
+        font-weight: 700;
+        letter-spacing: 0.25em;
+        font-size: 11px;
+        margin-bottom: 64px;
+      }
+      .cover-title {
+        font-size: 64px;
+        font-weight: 700;
+        color: var(--noxias-print-ink);
+        line-height: 1;
+        margin-bottom: 16px;
+        letter-spacing: -0.03em;
+      }
+      .cover-rule {
+        width: 80px;
+        height: 4px;
+        margin: 24px auto;
+        background: var(--noxias-print-accent);
+      }
+      .cover-doctitle {
+        font-style: italic;
+        color: var(--noxias-print-muted);
+        font-size: 18px;
+        margin-bottom: 96px;
+      }
+      .cover-meta { font-size: 13px; color: var(--noxias-print-muted); }
+      .cover-meta p { margin: 4px 0; }
+      .cover-conf { font-style: italic; }
+
+      /* PAGES */
+      .page {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 32mm 28mm;
+        background: var(--noxias-print-paper);
+        min-height: 100vh;
+      }
+      @media print { .page { min-height: 0; padding: 24mm 24mm 28mm; } }
+      .page-break { page-break-before: always; break-before: page; }
+
+      /* SOMMAIRE */
+      .sommaire .toc { list-style: none; padding: 0; margin: 32px 0; }
+      .sommaire .toc li {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--noxias-print-ink);
+        padding: 16px 0;
+        border-bottom: 1px solid var(--noxias-print-border);
+        display: flex;
+        gap: 24px;
+        align-items: baseline;
+      }
+      .toc-num {
+        color: var(--noxias-print-accent);
+        font-size: 14px;
+        letter-spacing: 0.1em;
+      }
+
+      /* PART HEADER */
+      .part-header { margin-bottom: 32px; }
+      .part-num {
+        font-size: 56px;
+        font-weight: 700;
+        color: var(--noxias-print-accent-light);
+        line-height: 1;
+        margin: 0;
+        letter-spacing: -0.03em;
+      }
+      .part-label {
+        color: var(--noxias-print-accent);
+        font-weight: 700;
+        letter-spacing: 0.24em;
+        font-size: 12px;
+        margin: -16px 0 8px;
+      }
+      .part-title {
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--noxias-print-ink);
+        line-height: 1.1;
+        margin: 0 0 12px;
+        letter-spacing: -0.02em;
+      }
+      .part-intro {
+        font-style: italic;
+        color: var(--noxias-print-muted);
+        margin: 16px 0 32px;
+        max-width: 60ch;
+      }
+      .rule-accent {
+        height: 3px;
+        background: var(--noxias-print-accent);
+        border: none;
+        width: 64px;
+        margin: 12px 0 0;
+      }
+      .section-h2 {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--noxias-print-deep);
+        margin: 36px 0 12px;
+        letter-spacing: -0.01em;
+      }
+      .section-h2 .pitch-id, .section-h2 .obj-code {
+        color: var(--noxias-print-accent);
+        font-weight: 700;
+        margin-right: 8px;
+      }
+
+      /* MATRIX ROWS */
+      .matrix-row { margin-bottom: 28px; page-break-inside: avoid; }
+      .matrix-cat {
+        color: var(--noxias-print-accent);
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        font-size: 11px;
+        text-transform: uppercase;
+        margin: 0 0 4px;
+      }
+      .matrix-q {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--noxias-print-deep);
+        margin: 0 0 8px;
+      }
+      .matrix-a { font-size: 14px; color: var(--noxias-print-ink); }
+      .matrix-a p { margin: 0 0 8px; line-height: 1.65; }
+
+      /* INTRO NARRATIVE */
+      .intro-narrative p { line-height: 1.75; margin: 0 0 16px; color: var(--noxias-print-ink); font-size: 15px; }
+      .intro-narrative .drop-cap::first-letter {
+        float: left;
+        font-size: 56px;
+        line-height: 0.85;
+        padding: 4px 8px 0 0;
+        color: var(--noxias-print-accent);
+        font-weight: 700;
+      }
+
+      /* PERSONAS */
+      .persona { margin: 40px 0; padding: 0; }
+      .persona-field { margin: 16px 0; }
+      .persona-field h4 {
+        color: var(--noxias-print-accent);
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-size: 11px;
+        margin: 0 0 4px;
+      }
+      .prose-block p { line-height: 1.7; margin: 0 0 10px; font-size: 14px; color: var(--noxias-print-ink); }
+      .bullet-list { margin: 8px 0 12px; padding-left: 0; list-style: none; }
+      .bullet-list li {
+        position: relative;
+        padding-left: 18px;
+        margin-bottom: 6px;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .bullet-list li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 9px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--noxias-print-accent);
+      }
+
+      /* ARGUMENTS */
+      .arguments-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+      .argument-card {
+        padding: 20px;
+        border-radius: 8px;
+        background: var(--noxias-print-paper-alt);
+        border-left: 4px solid var(--noxias-print-accent);
+      }
+      .argument-headline {
+        color: var(--noxias-print-accent-dark);
+        font-style: italic;
+        font-weight: 700;
+        font-size: 17px;
+        margin: 0 0 12px;
+        line-height: 1.35;
+      }
+      .argument-body p { font-size: 13px; line-height: 1.6; margin: 0 0 6px; }
+
+      /* CALLOUTS */
+      .callout {
+        background: var(--noxias-print-accent-light);
+        border-left: 4px solid var(--noxias-print-accent);
+        padding: 24px 28px;
+        margin: 32px 0;
+        border-radius: 0 8px 8px 0;
+        page-break-inside: avoid;
+      }
+      .callout-eyebrow {
+        color: var(--noxias-print-accent-dark);
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        font-size: 11px;
+        margin: 0 0 8px;
+      }
+      .callout-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--noxias-print-deep);
+        margin: 0 0 8px;
+      }
+      .callout-text {
+        font-size: 17px;
+        font-weight: 500;
+        color: var(--noxias-print-ink);
+        line-height: 1.55;
+        margin: 0;
+      }
+      .callout-promise .callout-text { font-size: 19px; font-style: italic; }
+      .callout-anchor { background: var(--noxias-print-deep); border-left-color: var(--noxias-print-accent); }
+      .callout-anchor .callout-eyebrow { color: var(--noxias-print-accent); }
+      .callout-anchor .callout-text { color: white; }
+      .callout-list { margin: 0; padding-left: 0; list-style: none; }
+      .callout-list li {
+        position: relative;
+        padding-left: 24px;
+        margin-bottom: 8px;
+        line-height: 1.5;
+        color: var(--noxias-print-ink);
+      }
+      .callout-list li::before {
+        content: "?";
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--noxias-print-accent);
+        color: white;
+        font-weight: 700;
+        font-size: 11px;
+        text-align: center;
+        line-height: 18px;
+      }
+
+      /* PHRASES À MARTELER */
+      .phrases-list { margin: 12px 0; padding: 0; list-style: none; }
+      .phrases-list li {
+        position: relative;
+        padding: 16px 0 16px 32px;
+        border-bottom: 1px solid var(--noxias-print-border);
+        font-size: 17px;
+        font-style: italic;
+        font-weight: 500;
+        color: var(--noxias-print-deep);
+        line-height: 1.4;
+      }
+      .phrases-list li::before {
+        content: "▶";
+        position: absolute;
+        left: 0;
+        top: 19px;
+        color: var(--noxias-print-accent);
+        font-size: 12px;
+      }
+      .phrase-quote { color: var(--noxias-print-accent); font-style: normal; font-size: 22px; vertical-align: -2px; }
+
+      /* PITCH */
+      .pitch-section { margin: 32px 0; }
+      .pitch-script {
+        margin: 16px 0;
+        padding: 0 0 0 16px;
+        border-left: 3px solid var(--noxias-print-accent);
+      }
+      .pitch-variant {
+        color: var(--noxias-print-accent-dark);
+        font-weight: 700;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin: 0 0 6px;
+      }
+      .pitch-text {
+        font-style: italic;
+        color: var(--noxias-print-ink);
+        line-height: 1.65;
+        margin: 0;
+        white-space: pre-wrap;
+      }
+
+      /* OBJECTIONS */
+      .objection-family { margin: 28px 0; }
+      .objection { margin: 16px 0 20px; padding-left: 16px; border-left: 2px solid var(--noxias-print-border); }
+      .objection-quote {
+        font-style: italic;
+        font-weight: 700;
+        color: var(--noxias-print-accent-dark);
+        margin: 0 0 6px;
+        font-size: 15px;
+      }
+      .obj-num {
+        color: var(--noxias-print-muted);
+        font-style: normal;
+        font-weight: 400;
+        margin-right: 6px;
+      }
+      .objection-response {
+        font-style: italic;
+        line-height: 1.65;
+        margin: 0;
+        white-space: pre-wrap;
+      }
+
+      /* QUALIFICATION */
+      .qualif-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 16px 0 32px;
+        font-size: 13px;
+      }
+      .qualif-table thead th {
+        background: var(--noxias-print-ink);
+        color: white;
+        font-weight: 700;
+        text-align: left;
+        padding: 12px 14px;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 12px;
+        letter-spacing: 0.05em;
+      }
+      .qualif-table thead th:last-child { border-right: none; }
+      .qualif-table tbody th[scope="row"] {
+        background: var(--noxias-print-accent-light);
+        color: var(--noxias-print-deep);
+        font-weight: 700;
+        text-align: left;
+        padding: 12px 14px;
+        vertical-align: top;
+        width: 18%;
+      }
+      .qualif-table td {
+        padding: 12px 14px;
+        vertical-align: top;
+        border-bottom: 1px solid var(--noxias-print-border);
+        line-height: 1.5;
+      }
+      .qualif-table tbody tr:nth-child(even) td { background: var(--noxias-print-paper-alt); }
+
+      .tiers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0; }
+      .tier-card {
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid var(--noxias-print-border);
+        border-top: 4px solid var(--noxias-print-accent);
+      }
+      .tier-eyebrow {
+        font-weight: 700;
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        margin: 0 0 4px;
+      }
+      .tier-name { font-size: 18px; font-weight: 700; color: var(--noxias-print-deep); margin: 0 0 4px; }
+      .tier-score { font-size: 14px; font-style: italic; margin: 0 0 12px; }
+      .tier-desc { font-size: 13px; line-height: 1.5; margin: 0 0 12px; color: var(--noxias-print-ink); }
+      .tier-action { font-size: 12px; line-height: 1.5; margin: 0; color: var(--noxias-print-ink); }
+      .tier-hot { background: var(--noxias-print-accent-light); border-top-color: var(--noxias-print-accent); }
+      .tier-hot .tier-eyebrow, .tier-hot .tier-score { color: var(--noxias-print-accent-dark); }
+      .tier-warm { background: #fef3c7; border-top-color: #d97706; }
+      .tier-warm .tier-eyebrow, .tier-warm .tier-score { color: #d97706; }
+      .tier-cold { background: #f3f4f6; border-top-color: var(--noxias-print-muted); }
+      .tier-cold .tier-eyebrow, .tier-cold .tier-score { color: var(--noxias-print-muted); }
+
+      /* FOOTER */
+      .print-footer {
+        text-align: center;
+        padding: 32px 0 48px;
+        font-size: 11px;
+        color: var(--noxias-print-muted);
+        letter-spacing: 0.1em;
+      }
+      @media print { .print-footer { display: none; } }
+    `}</style>
   );
 }

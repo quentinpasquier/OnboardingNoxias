@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 372 88" fill="none">
+  <g fill="#221932">
+    <!-- n -->
+    <path d="M 0 87 V 28 A 28 28 0 0 1 56 28 V 87 H 41 V 28 A 13 13 0 0 0 15 28 V 87 Z" />
+    <!-- o -->
+    <path fill-rule="evenodd" d="M 92 0 A 28 28 0 0 0 64 28 V 60 A 28 28 0 0 0 120 60 V 28 A 28 28 0 0 0 92 0 Z M 92 15 A 13 13 0 0 0 79 28 V 60 A 13 13 0 0 0 105 60 V 28 A 13 13 0 0 0 92 15 Z" />
+    <!-- x : deux arrowheads pointant vers le centre + triangle vert -->
+    <path d="M 128 0 L 184 0 L 184 18 L 168 36 L 184 54 L 184 87 L 128 87 L 128 69 L 144 51 L 128 33 Z M 143 18 L 156 32 L 156 39 L 169 30 L 156 18 Z M 143 69 L 156 55 L 156 48 L 169 57 L 156 69 Z" fill-rule="evenodd" />
+    <!-- i -->
+    <path d="M 192 87 V 14 A 7 7 0 0 1 199 7 H 199 A 7 7 0 0 1 206 14 V 87 Z" />
+    <!-- a (forme d'arche comme n mais avec barre traversière) -->
+    <path d="M 214 87 V 28 A 28 28 0 0 1 270 28 V 87 H 255 V 56 H 229 V 87 Z M 229 41 H 255 V 28 A 13 13 0 0 0 229 28 Z" fill-rule="evenodd" />
+    <!-- s -->
+    <path d="M 305 87 A 27 27 0 0 1 278 60 H 293 A 12 12 0 0 0 305 72 H 318 A 8 8 0 0 0 318 56 H 296 A 23 23 0 0 1 296 10 H 313 A 27 27 0 0 1 340 37 H 325 A 12 12 0 0 0 313 25 H 296 A 8 8 0 0 0 296 41 H 318 A 23 23 0 0 1 318 87 Z" />
+  </g>
+  <!-- triangle vert au centre du X -->
+  <path d="M 156 36 L 168 44 L 156 52 Z" fill="#3CC879" />
+</svg>

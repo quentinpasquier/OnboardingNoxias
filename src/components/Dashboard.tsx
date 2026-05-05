@@ -61,7 +61,7 @@ export function Dashboard() {
               Onboarding client <span className="text-accent">Noxias</span>
             </h1>
             <p className="text-noxias-muted max-w-xl text-base md:text-lg leading-relaxed">
-              Deux ateliers structurés — Matrice de prospection puis Boîte à outils du commercial. L'IA propose, vous arbitrez avec votre client, les livrables sortent en deux clics.
+              Cadrez la prospection et armez vos commerciaux en deux ateliers guidés. L'IA prépare la trame, vous l'arbitrez avec votre client, les livrables sortent en quelques clics.
             </p>
           </div>
           <div className="hidden md:block">

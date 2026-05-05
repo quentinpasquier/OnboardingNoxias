@@ -162,10 +162,8 @@ function MissionCard({ mission }: { mission: Mission }) {
   return (
     <Link
       href={`/missions/${mission.id}`}
-      target="_blank"
-      rel="noopener"
       className="group"
-      title={`Ouvrir l'onboarding ${mission.clientName} dans un nouvel onglet`}
+      title={`Ouvrir l'onboarding ${mission.clientName}`}
     >
       <Card className={`h-full hover:border-accent/50 hover:shadow-md transition-all ${completed ? "bg-secondary/40" : ""}`}>
         <CardHeader>

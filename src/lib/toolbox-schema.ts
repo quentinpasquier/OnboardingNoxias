@@ -35,12 +35,14 @@ export type QualifCriterion = {
 
 export type Toolbox = {
   positioning: {
-    intro: string;
-    promise: string;
-    services: string;
-    targets: string;
-    phrases: string[];
-    finalAnchor: string;
+    intro: string;        // 4 à 6 paragraphes narratifs (cadrage, enjeu, positionnement)
+    promise: string;      // promesse centrale en 1-2 phrases
+    services: string;     // ordre des services à présenter
+    targets: string;      // cibles à prioriser
+    phrases: string[];    // 5 phrases à marteler
+    finalAnchor: string;  // positionnement final à ancrer
+    irritants: string[];  // questions concrètes pour ouvrir un échange (« comment gérez-vous… »)
+    valueResult: string;  // résultat tangible promis 30-60j
   };
   personas: Persona[];
   disqualified: string;

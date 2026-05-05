@@ -163,45 +163,76 @@ function ToolboxView({ mission, update }: { mission: Mission; update: (m: Missio
 }
 
 function PositioningEditor({ value, onChange }: { value: Toolbox["positioning"]; onChange: (v: Toolbox["positioning"]) => void }) {
-  const fields: { key: keyof Toolbox["positioning"]; label: string; rows?: number }[] = [
-    { key: "intro", label: "Introduction / cadrage", rows: 6 },
+  const longFields: { key: keyof Toolbox["positioning"]; label: string; rows: number }[] = [
+    { key: "intro", label: "Introduction / cadrage (4–6 paragraphes)", rows: 12 },
     { key: "promise", label: "Promesse centrale", rows: 2 },
-    { key: "services", label: "Services à mettre en avant", rows: 3 },
+    { key: "services", label: "Services à mettre en avant (ordre constant)", rows: 3 },
     { key: "targets", label: "Cibles à prioriser", rows: 4 },
-    { key: "finalAnchor", label: "Ancrage final", rows: 2 },
+    { key: "valueResult", label: "Résultat tangible promis (30–60j)", rows: 5 },
+    { key: "finalAnchor", label: "Positionnement final à ancrer", rows: 3 },
   ];
+
+  function setStringList(key: "phrases" | "irritants", next: string[]) {
+    onChange({ ...value, [key]: next });
+  }
+
   return (
     <div className="grid lg:grid-cols-2 gap-4">
-      {fields.map((f) => (
-        <Card key={f.key}>
+      {longFields.map((f) => (
+        <Card key={f.key} className={f.key === "intro" || f.key === "valueResult" ? "lg:col-span-2" : ""}>
           <CardHeader className="pb-2"><CardTitle className="text-sm">{f.label}</CardTitle></CardHeader>
           <CardContent>
             <Textarea
               value={String(value[f.key] ?? "")}
               onChange={(e) => onChange({ ...value, [f.key]: e.target.value })}
-              rows={f.rows ?? 4}
+              rows={f.rows}
             />
           </CardContent>
         </Card>
       ))}
+
       <Card className="lg:col-span-2">
         <CardHeader className="pb-2"><CardTitle className="text-sm">Phrases à marteler</CardTitle></CardHeader>
         <CardContent className="space-y-2">
-          {value.phrases.map((p, i) => (
+          {(value.phrases ?? []).map((p, i) => (
             <div key={i} className="flex gap-2">
               <input
                 className="flex-1 h-9 px-3 rounded-md border border-input bg-card text-sm"
                 value={p}
                 onChange={(e) => {
-                  const next = [...value.phrases];
+                  const next = [...(value.phrases ?? [])];
                   next[i] = e.target.value;
-                  onChange({ ...value, phrases: next });
+                  setStringList("phrases", next);
                 }}
               />
-              <Button variant="ghost" size="sm" onClick={() => onChange({ ...value, phrases: value.phrases.filter((_, idx) => idx !== i) })}>×</Button>
+              <Button variant="ghost" size="sm" onClick={() => setStringList("phrases", (value.phrases ?? []).filter((_, idx) => idx !== i))}>×</Button>
             </div>
           ))}
-          <Button variant="outline" size="sm" onClick={() => onChange({ ...value, phrases: [...value.phrases, ""] })}>+ Ajouter une phrase</Button>
+          <Button variant="outline" size="sm" onClick={() => setStringList("phrases", [...(value.phrases ?? []), ""])}>+ Ajouter une phrase</Button>
+        </CardContent>
+      </Card>
+
+      <Card className="lg:col-span-2">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Irritants — questions à poser au prospect</CardTitle>
+          <CardDescription>Pour ouvrir l'échange sans pitcher. Remplace « Nous créons des sites… » par « Comment gérez-vous … ? ».</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {(value.irritants ?? []).map((p, i) => (
+            <div key={i} className="flex gap-2">
+              <input
+                className="flex-1 h-9 px-3 rounded-md border border-input bg-card text-sm"
+                value={p}
+                onChange={(e) => {
+                  const next = [...(value.irritants ?? [])];
+                  next[i] = e.target.value;
+                  setStringList("irritants", next);
+                }}
+              />
+              <Button variant="ghost" size="sm" onClick={() => setStringList("irritants", (value.irritants ?? []).filter((_, idx) => idx !== i))}>×</Button>
+            </div>
+          ))}
+          <Button variant="outline" size="sm" onClick={() => setStringList("irritants", [...(value.irritants ?? []), ""])}>+ Ajouter une question</Button>
         </CardContent>
       </Card>
     </div>

@@ -1,41 +1,62 @@
 import type { Mission } from "@/types/mission";
 import { MATRIX_QUESTIONS } from "@/lib/matrix-questions";
 
-export function missionToMarkdown(mission: Mission): string {
+export type ExportScope = "matrix" | "toolbox" | "both";
+
+const OBJ_CATS: Record<string, string> = {
+  A: "Prestataires actuels / interne",
+  B: "Budget / coût",
+  C: "Temps / priorité",
+  D: "Confiance / transparence",
+  E: "Besoin / pertinence",
+};
+
+export function missionToMarkdown(mission: Mission, opts: { scope?: ExportScope } = {}): string {
+  const scope = opts.scope ?? "both";
   const lines: string[] = [];
-  lines.push(`# ${mission.clientName} — Livrables prospection`);
+
+  if (scope === "matrix") lines.push(`# ${mission.clientName} — Matrice de prospection`);
+  else if (scope === "toolbox") lines.push(`# ${mission.clientName} — Boîte à outils du commercial`);
+  else lines.push(`# ${mission.clientName} — Livrables prospection`);
   lines.push(`*Généré par Noxias Prospection Builder*\n`);
 
-  lines.push(`\n## Matrice de prospection\n`);
-  for (const q of MATRIX_QUESTIONS) {
-    const a = mission.matrix[q.id]?.trim();
-    if (!a) continue;
-    lines.push(`### ${q.id}. ${q.category}`);
-    lines.push(`**${q.question}**\n`);
-    lines.push(`${a}\n`);
+  if (scope === "matrix" || scope === "both") {
+    if (scope === "both") lines.push(`\n## Matrice de prospection\n`);
+    for (const q of MATRIX_QUESTIONS) {
+      const a = mission.matrix[q.id]?.trim();
+      if (!a) continue;
+      lines.push(`### ${q.id}. ${q.category}`);
+      lines.push(`**${q.question}**\n`);
+      lines.push(`${a}\n`);
+    }
   }
 
   const tb = mission.toolbox;
-  if (tb) {
-    lines.push(`\n## Boîte à outils du commercial\n`);
+  if (tb && (scope === "toolbox" || scope === "both")) {
+    if (scope === "both") lines.push(`\n## Boîte à outils du commercial\n`);
 
-    lines.push(`### Positionnement\n`);
-    lines.push(tb.positioning.intro);
-    lines.push(`\n**Promesse :** ${tb.positioning.promise}`);
-    lines.push(`\n**Services à mettre en avant :** ${tb.positioning.services}`);
-    lines.push(`\n**Cibles à prioriser :** ${tb.positioning.targets}`);
-    lines.push(`\n**Phrases à marteler :**`);
-    for (const p of tb.positioning.phrases) lines.push(`- ${p}`);
-    lines.push(`\n**Ancrage final :** ${tb.positioning.finalAnchor}\n`);
+    lines.push(`### Cadrage & positionnement\n`);
+    lines.push(tb.positioning.intro + "\n");
+    lines.push(`\n**Promesse centrale.** ${tb.positioning.promise}\n`);
+    lines.push(`**Services à mettre en avant.** ${tb.positioning.services}\n`);
+    lines.push(`**Cibles à prioriser.** ${tb.positioning.targets}\n`);
+    lines.push(`**Résultat tangible (30-60j).** ${tb.positioning.valueResult ?? "—"}\n`);
+    lines.push(`**Phrases à marteler :**`);
+    for (const p of tb.positioning.phrases) lines.push(`- *« ${p} »*`);
+    if (tb.positioning.irritants?.length) {
+      lines.push(`\n**Questions d'ouverture (irritants à poser) :**`);
+      for (const q of tb.positioning.irritants) lines.push(`- ${q}`);
+    }
+    lines.push(`\n**Positionnement final.** ${tb.positioning.finalAnchor}\n`);
 
     lines.push(`### Personas\n`);
     for (const p of tb.personas) {
-      lines.push(`#### ${p.title}`);
+      lines.push(`#### ${p.title}\n`);
       lines.push(`**Profil.** ${p.profile}\n`);
-      lines.push(`**KPI.** ${p.kpis}\n`);
-      lines.push(`**Douleurs.** ${p.pains}\n`);
+      lines.push(`**KPIs et métriques de décision.** ${p.kpis}\n`);
+      lines.push(`**Douleurs et freins.** ${p.pains}\n`);
       lines.push(`**Motivations.** ${p.motivations}\n`);
-      lines.push(`**Déclencheurs.** ${p.triggers}\n`);
+      lines.push(`**Déclencheurs d'achat.** ${p.triggers}\n`);
     }
 
     lines.push(`### Profils à disqualifier\n`);
@@ -43,7 +64,7 @@ export function missionToMarkdown(mission: Mission): string {
 
     lines.push(`### Argumentaires clés\n`);
     for (const a of tb.killerArguments) {
-      lines.push(`> *${a.headline}*\n`);
+      lines.push(`> *« ${a.headline} »*\n`);
       lines.push(a.body + "\n");
     }
 
@@ -57,17 +78,17 @@ export function missionToMarkdown(mission: Mission): string {
     }
 
     lines.push(`### Traitement des 30 objections\n`);
-    const cats: Record<string, string> = { A: "Partenaires actuels / interne", B: "Budget / coût", C: "Temps / priorité", D: "Confiance / transparence", E: "Besoin / pertinence" };
     for (const code of ["A", "B", "C", "D", "E"] as const) {
-      lines.push(`#### ${code}. ${cats[code]}\n`);
+      lines.push(`#### ${code}. ${OBJ_CATS[code]}\n`);
       const items = tb.objections.filter((o) => o.category === code);
       for (const o of items) {
-        lines.push(`**${o.id}. *${o.text}***\n`);
+        lines.push(`**${o.id}.** *« ${o.text} »*\n`);
         lines.push(o.response + "\n");
       }
     }
 
-    lines.push(`### Matrice de qualification\n`);
+    lines.push(`### Matrice de qualification (Scoring R1)\n`);
+    lines.push(`Lead « Qualifié pour R2 » si score ≥ 7/10. Cinq critères, chacun noté 0/1/2.\n`);
     lines.push(`| Critère | Score 0 (faible) | Score 1 (moyen) | Score 2 (élevé) |`);
     lines.push(`|---|---|---|---|`);
     for (const c of tb.qualification.criteria) {

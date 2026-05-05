@@ -1,11 +1,23 @@
 "use client";
 import { useState, useRef } from "react";
 import Link from "next/link";
-import { Sparkles, Loader2, RefreshCw, ArrowRight, CheckCircle2, AlertTriangle, StopCircle, FileQuestion } from "lucide-react";
+import { Sparkles, RefreshCw, ArrowRight, CheckCircle2, AlertTriangle, StopCircle, FileQuestion } from "lucide-react";
 import type { Mission } from "@/types/mission";
 import type { MissionUpdater } from "@/hooks/use-mission";
 import type { Toolbox } from "@/lib/toolbox-schema";
-import { SECTION_DEFS, isSectionDone, emptyToolbox, type SectionKey } from "@/lib/toolbox-sections";
+import {
+  SECTION_DEFS,
+  isSectionDone,
+  emptyToolbox,
+  expandSectionToJobs,
+  missingJobs,
+  allJobs,
+  jobLabel,
+  jobToKey,
+  mergeJobResult,
+  type Job,
+  type SectionKey,
+} from "@/lib/toolbox-sections";
 import { MATRIX_QUESTIONS } from "@/lib/matrix-questions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,15 +26,17 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Button as _ } from "@/components/ui/button";
+import { AiThinking } from "@/components/ai/AiThinking";
 
-type Progress = { done: number; total: number; current: string };
+type ProgressState = { done: number; total: number; current: string };
 
 export function ToolboxHub({ mission, update }: { mission: Mission; update: (u: MissionUpdater) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [instructions, setInstructions] = useState("");
-  const [progress, setProgress] = useState<Progress | null>(null);
+  const [progress, setProgress] = useState<ProgressState | null>(null);
   const cancelRef = useRef(false);
 
   const tb = mission.toolbox;
@@ -35,42 +49,38 @@ export function ToolboxHub({ mission, update }: { mission: Mission; update: (u: 
   const allDone = sectionsDone === totalSections;
   const someDone = sectionsDone > 0;
 
-  const sectionsToGenerate = SECTION_DEFS.filter((s) => !isSectionDone(tb, s.key));
-
-  async function generateAll() {
+  async function runJobs(jobs: Job[]) {
     setBusy(true);
     setError(null);
     cancelRef.current = false;
-
-    const targets = sectionsToGenerate.length > 0 ? sectionsToGenerate : SECTION_DEFS;
-    setProgress({ done: 0, total: targets.length, current: targets[0].label });
+    setProgress({ done: 0, total: jobs.length, current: jobLabel(jobs[0]) });
 
     let workingTb: Toolbox = tb ? { ...tb } : emptyToolbox();
 
     try {
-      for (let i = 0; i < targets.length; i++) {
+      for (let i = 0; i < jobs.length; i++) {
         if (cancelRef.current) {
-          setError("Génération interrompue.");
+          setError(`Génération interrompue (${i}/${jobs.length} blocs).`);
           break;
         }
-        const sec = targets[i];
-        setProgress({ done: i, total: targets.length, current: sec.label });
+        const job = jobs[i];
+        setProgress({ done: i, total: jobs.length, current: jobLabel(job) });
 
         const res = await fetch("/api/ai/generate-toolbox-section", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             mission: { ...mission, toolbox: workingTb },
-            section: sec.key,
+            job,
             refineInstructions: instructions.trim() || undefined,
           }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? `Erreur ${res.status}`);
 
-        workingTb = mergeSection(workingTb, sec.key, data.data);
-        update((prev) => ({ ...prev, toolbox: mergeSection(prev.toolbox ?? emptyToolbox(), sec.key, data.data) }));
-        setProgress({ done: i + 1, total: targets.length, current: `${sec.label} ✓` });
+        workingTb = mergeJobResult(workingTb, job, data.data);
+        update((prev) => ({ ...prev, toolbox: mergeJobResult(prev.toolbox ?? emptyToolbox(), job, data.data) }));
+        setProgress({ done: i + 1, total: jobs.length, current: `${jobLabel(job)} ✓` });
       }
       if (!cancelRef.current) {
         setOpen(false);
@@ -84,13 +94,24 @@ export function ToolboxHub({ mission, update }: { mission: Mission; update: (u: 
     }
   }
 
+  function startGenerateAll() {
+    const jobs = someDone ? missingJobs(tb) : allJobs();
+    runJobs(jobs.length > 0 ? jobs : allJobs());
+  }
+
+  function startRegenerateAll() {
+    runJobs(allJobs());
+  }
+
+  const missingCount = missingJobs(tb).length;
+
   return (
     <div className="space-y-6">
       {!someDone ? (
         <Card className="bg-accent/5 border-accent/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Générer la boîte à outils</CardTitle>
-            <CardDescription>L'IA construit les 6 sections (positionnement, personas, arguments, pitch V1, 30 objections, matrice de qualif) en s'appuyant sur ta matrice et le contexte client. Découpé en blocs courts pour ne jamais timeout.</CardDescription>
+            <CardDescription>L'IA construit la boîte en <strong>{allJobs().length} blocs courts</strong> (environ 10–20 s chacun, jamais au-delà de 60 s) : positionnement, personas, arguments, 6 sous-blocs de pitch, 5 familles d'objections, et la matrice de qualification. Aucun chunk ne peut bloquer toute la génération.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {lowMatrix && (
@@ -103,7 +124,7 @@ export function ToolboxHub({ mission, update }: { mission: Mission; update: (u: 
               </div>
             )}
             <div className="flex items-center justify-between pt-2">
-              <p className="text-xs text-muted-foreground">~ 60–120 s au total. Coût estimé : 5–15 ¢ par génération complète (avec prompt caching).</p>
+              <p className="text-xs text-muted-foreground">~ 2–4 min au total selon la richesse du contexte. Coût estimé : 8–18 ¢ avec prompt caching.</p>
               <Button onClick={() => { setOpen(true); setError(null); }} variant="accent" size="lg">
                 <Sparkles /> Générer toute la boîte
               </Button>
@@ -116,11 +137,20 @@ export function ToolboxHub({ mission, update }: { mission: Mission; update: (u: 
             <div className="flex items-start justify-between gap-3">
               <div>
                 <CardTitle className="text-base">Boîte à outils — vue d'ensemble</CardTitle>
-                <CardDescription>Édite chaque section indépendamment. Tu peux régénérer une section seule ou toutes en une fois.</CardDescription>
+                <CardDescription>Édite chaque section indépendamment. Régénère section par section ou bloc par bloc.</CardDescription>
               </div>
-              <Button onClick={() => { setOpen(true); setError(null); }} variant="outline" size="sm">
-                <RefreshCw /> {allDone ? "Tout régénérer" : `Générer les ${sectionsToGenerate.length} sections manquantes`}
-              </Button>
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                {missingCount > 0 && (
+                  <Button onClick={() => { setOpen(true); setError(null); }} variant="accent" size="sm">
+                    <Sparkles /> Compléter ({missingCount} blocs)
+                  </Button>
+                )}
+                {allDone && (
+                  <Button onClick={startRegenerateAll} variant="outline" size="sm" disabled={busy}>
+                    <RefreshCw /> Tout régénérer
+                  </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -136,6 +166,7 @@ export function ToolboxHub({ mission, update }: { mission: Mission; update: (u: 
       <div className="grid md:grid-cols-2 gap-4">
         {SECTION_DEFS.map((sec) => {
           const done = isSectionDone(tb, sec.key);
+          const sectionMissing = expandSectionToJobs(sec.key).filter((j) => !done && missingJobs(tb).some((m) => jobToKey(m) === jobToKey(j))).length;
           const Icon = sec.icon;
           return (
             <Link key={sec.key} href={`/missions/${mission.id}/boite-a-outils/${sec.slug}`} className="group">
@@ -145,6 +176,8 @@ export function ToolboxHub({ mission, update }: { mission: Mission; update: (u: 
                     <div className="rounded-lg bg-accent/10 p-2"><Icon className="h-5 w-5 text-accent" /></div>
                     {done ? (
                       <Badge variant="success"><CheckCircle2 className="h-3 w-3 mr-1" /> Générée</Badge>
+                    ) : sectionMissing > 0 && sectionMissing < expandSectionToJobs(sec.key).length ? (
+                      <Badge variant="outline" className="border-amber-400 bg-amber-100 text-amber-900">Partielle</Badge>
                     ) : (
                       <Badge variant="outline" className="text-muted-foreground"><FileQuestion className="h-3 w-3 mr-1" /> À générer</Badge>
                     )}
@@ -168,12 +201,12 @@ export function ToolboxHub({ mission, update }: { mission: Mission; update: (u: 
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Génération en blocs</DialogTitle>
             <DialogDescription>
-              L'IA produit {sectionsToGenerate.length > 0 ? sectionsToGenerate.length : SECTION_DEFS.length} section{(sectionsToGenerate.length || SECTION_DEFS.length) > 1 ? "s" : ""} en autant d'appels courts (10–20 s chacun). Tu peux annuler à tout moment, le travail déjà généré reste.
+              L'IA produit chaque bloc séparément (10–20 s par bloc). Si un bloc plante, les autres ne sont pas affectés.
             </DialogDescription>
           </DialogHeader>
-          {!busy && (
+          {!busy && !progress && (
             <div className="grid gap-2">
-              <Label htmlFor="hub-instructions">Instructions optionnelles</Label>
+              <Label htmlFor="hub-instructions">Instructions optionnelles (s'appliquent à tous les blocs)</Label>
               <Textarea
                 id="hub-instructions"
                 rows={3}
@@ -183,14 +216,17 @@ export function ToolboxHub({ mission, update }: { mission: Mission; update: (u: 
               />
             </div>
           )}
-          {progress && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">{progress.current}</span>
-                <span className="tabular-nums text-muted-foreground">{progress.done}/{progress.total}</span>
+          {progress && busy && (
+            <div className="space-y-3">
+              <AiThinking label={progress.current} size="md" className="my-2" />
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">Progression</span>
+                  <span className="tabular-nums text-muted-foreground">{progress.done}/{progress.total} blocs</span>
+                </div>
+                <Progress value={Math.round((progress.done / progress.total) * 100)} />
               </div>
-              <Progress value={Math.round((progress.done / progress.total) * 100)} />
-              <p className="text-xs text-muted-foreground">Les sections apparaissent en direct au fur et à mesure.</p>
+              <p className="text-xs text-muted-foreground text-center">Les sections apparaissent en direct au fur et à mesure dans la page.</p>
             </div>
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
@@ -203,8 +239,8 @@ export function ToolboxHub({ mission, update }: { mission: Mission; update: (u: 
             {busy ? (
               <Button onClick={() => { cancelRef.current = true; }} variant="outline"><StopCircle /> Stopper</Button>
             ) : (
-              <Button onClick={generateAll} variant="accent">
-                {someDone ? <><RefreshCw /> Régénérer</> : <><Sparkles /> Lancer la génération</>}
+              <Button onClick={startGenerateAll} variant="accent">
+                {someDone ? <><Sparkles /> Compléter</> : <><Sparkles /> Lancer la génération</>}
               </Button>
             )}
           </div>
@@ -212,27 +248,4 @@ export function ToolboxHub({ mission, update }: { mission: Mission; update: (u: 
       </Dialog>
     </div>
   );
-}
-
-function mergeSection(tb: Toolbox, key: SectionKey, data: Record<string, unknown>): Toolbox {
-  switch (key) {
-    case "positioning":
-      return { ...tb, positioning: data as Toolbox["positioning"] };
-    case "personas":
-      return { ...tb, personas: (data.personas ?? []) as Toolbox["personas"] };
-    case "arguments":
-      return {
-        ...tb,
-        disqualified: (data.disqualified ?? "") as string,
-        killerArguments: (data.killerArguments ?? []) as Toolbox["killerArguments"],
-      };
-    case "pitch":
-      return { ...tb, pitch: (data.pitch ?? []) as Toolbox["pitch"] };
-    case "objections":
-      return { ...tb, objections: (data.objections ?? []) as Toolbox["objections"] };
-    case "qualification":
-      return { ...tb, qualification: (data.qualification ?? { criteria: [], tiers: [] }) as Toolbox["qualification"] };
-    default:
-      return tb;
-  }
 }

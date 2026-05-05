@@ -1,41 +1,48 @@
 import { NextResponse } from "next/server";
-import { anthropic, MODEL, buildSystem } from "@/lib/anthropic";
+import { anthropic, MODEL, buildSystem, NOXIAS_SYSTEM_PROMPT } from "@/lib/anthropic";
 import { buildMissionContext } from "@/lib/mission-context";
-import { SECTION_SCHEMAS, SECTION_PROMPTS } from "@/lib/toolbox-section-prompts";
-import type { SectionKey } from "@/lib/toolbox-sections";
+import { getJobPrompt, PITCH_EXPERT_SYSTEM_ADDENDUM } from "@/lib/toolbox-section-prompts";
+import type { Job } from "@/lib/toolbox-sections";
 import type { Mission } from "@/types/mission";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-type Body = { mission: Mission; section: SectionKey; refineInstructions?: string };
-
-const VALID_SECTIONS: SectionKey[] = ["positioning", "personas", "arguments", "pitch", "objections", "qualification"];
+type Body = { mission: Mission; job: Job; refineInstructions?: string };
 
 export async function POST(req: Request) {
   try {
-    const { mission, section, refineInstructions } = (await req.json()) as Body;
-    if (!VALID_SECTIONS.includes(section)) {
-      return NextResponse.json({ error: `Section inconnue : ${section}` }, { status: 400 });
+    const { mission, job, refineInstructions } = (await req.json()) as Body;
+    if (!job || !job.type) {
+      return NextResponse.json({ error: "Job manquant" }, { status: 400 });
     }
 
+    const { schema, userPrompt, expert, maxTokens } = getJobPrompt(job);
     const context = buildMissionContext(mission, { includeMatrix: true });
-    const system = buildSystem(context);
 
-    const userPrompt = refineInstructions?.trim()
-      ? `${SECTION_PROMPTS[section]}\n\n**Instructions complémentaires :**\n${refineInstructions.trim()}`
-      : SECTION_PROMPTS[section];
+    // Si agent expert : on injecte l'addendum dans le system prompt avant
+    // le contexte mission. Le prefix Noxias reste le même (cache hit).
+    const systemBlocks = expert
+      ? [
+          { type: "text" as const, text: NOXIAS_SYSTEM_PROMPT + PITCH_EXPERT_SYSTEM_ADDENDUM, cache_control: { type: "ephemeral" as const } },
+          { type: "text" as const, text: context, cache_control: { type: "ephemeral" as const } },
+        ]
+      : buildSystem(context);
+
+    const finalPrompt = refineInstructions?.trim()
+      ? `${userPrompt}\n\n**Instructions complémentaires :**\n${refineInstructions.trim()}`
+      : userPrompt;
 
     const stream = anthropic.messages.stream({
       model: MODEL,
-      max_tokens: 16000,
+      max_tokens: maxTokens,
       thinking: { type: "adaptive" },
       output_config: {
         effort: "medium",
-        format: { type: "json_schema", schema: SECTION_SCHEMAS[section] },
+        format: { type: "json_schema", schema },
       },
-      system,
-      messages: [{ role: "user", content: userPrompt }],
+      system: systemBlocks,
+      messages: [{ role: "user", content: finalPrompt }],
     });
 
     const final = await stream.finalMessage();
@@ -52,7 +59,7 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({
-      section,
+      job,
       data: parsed,
       usage: {
         input: final.usage.input_tokens,

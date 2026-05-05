@@ -4,6 +4,7 @@ import { Sparkles, Loader2, Check, X, Wand2, CheckCircle2, FileQuestion, FileEdi
 import type { Mission } from "@/types/mission";
 import { MATRIX_QUESTIONS, CATEGORY_GROUPS } from "@/lib/matrix-questions";
 import type { MissionUpdater } from "@/hooks/use-mission";
+import { AiThinking } from "@/components/ai/AiThinking";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -295,13 +296,16 @@ function BulkGenerateBar({
             </div>
           )}
           {progress && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-medium">{progress.current}</span>
-                <span className="tabular-nums text-muted-foreground">{progress.done}/{progress.total} questions</span>
+            <div className="space-y-3">
+              <AiThinking label={progress.current} size="md" />
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">Progression</span>
+                  <span className="tabular-nums text-muted-foreground">{progress.done}/{progress.total} questions</span>
+                </div>
+                <Progress value={Math.round((progress.done / progress.total) * 100)} />
               </div>
-              <Progress value={Math.round((progress.done / progress.total) * 100)} />
-              <p className="text-xs text-muted-foreground">Les réponses apparaissent en direct dans la matrice. Tu peux annuler à tout moment, le travail déjà généré reste.</p>
+              <p className="text-xs text-muted-foreground text-center">Les réponses apparaissent en direct dans la matrice. Tu peux annuler à tout moment, le travail déjà généré reste.</p>
             </div>
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
@@ -545,9 +549,7 @@ function MatrixRow({
             </Button>
           )}
           {busy && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> L'IA réfléchit…
-            </div>
+            <div className="py-2"><AiThinking label="L'IA travaille sur ta réponse" size="md" /></div>
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
           {draft && (

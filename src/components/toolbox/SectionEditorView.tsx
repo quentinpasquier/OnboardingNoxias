@@ -1,22 +1,37 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, RefreshCw, Loader2, Sparkles, FileQuestion } from "lucide-react";
+import { ArrowLeft, RefreshCw, Sparkles, FileQuestion, StopCircle } from "lucide-react";
 import { useMission } from "@/hooks/use-mission";
 import type { Toolbox } from "@/lib/toolbox-schema";
-import { SECTION_DEFS, isSectionDone, emptyToolbox, type SectionKey } from "@/lib/toolbox-sections";
+import {
+  SECTION_DEFS,
+  isSectionDone,
+  isJobDone,
+  emptyToolbox,
+  expandSectionToJobs,
+  jobLabel,
+  mergeJobResult,
+  PITCH_SECTION_LABELS,
+  OBJECTION_CATEGORY_LABELS,
+  type SectionKey,
+  type Job,
+  type PitchId,
+  type ObjectionCode,
+} from "@/lib/toolbox-sections";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { AtelierLoading, AtelierNotFound } from "@/components/AtelierShell";
+import { AiThinking } from "@/components/ai/AiThinking";
 import {
   PositioningEditor,
   PersonasEditor,
   ArgumentsEditor,
-  PitchEditor,
   ObjectionsEditor,
   QualificationEditor,
 } from "@/components/toolbox/editors";
@@ -33,7 +48,9 @@ export function SectionEditorView({ missionId, sectionKey }: { missionId: string
   if (mission === null || !def) return <AtelierNotFound />;
 
   const tb = mission.toolbox ?? emptyToolbox();
-  const done = isSectionDone(tb, sectionKey);
+  const sectionFullyDone = isSectionDone(tb, sectionKey);
+  const jobs = expandSectionToJobs(sectionKey);
+  const anyJobDone = jobs.some((j) => isJobDone(tb, j));
 
   function patchToolbox(next: Partial<Toolbox>) {
     update((prev) => ({ ...prev, toolbox: { ...(prev.toolbox ?? emptyToolbox()), ...next } }));
@@ -48,125 +65,259 @@ export function SectionEditorView({ missionId, sectionKey }: { missionId: string
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="font-display text-3xl font-bold tracking-tight">{def.label}</h1>
-            {done ? <Badge variant="success">Section générée</Badge> : <Badge variant="outline">À générer</Badge>}
+            {sectionFullyDone ? (
+              <Badge variant="success">Section générée</Badge>
+            ) : anyJobDone ? (
+              <Badge variant="outline" className="border-amber-400 bg-amber-100 text-amber-900">Partielle</Badge>
+            ) : (
+              <Badge variant="outline">À générer</Badge>
+            )}
           </div>
-          <RegenerateSectionButton mission={mission} sectionKey={sectionKey} update={update} />
+          <RegenerateAllInSection mission={mission} sectionKey={sectionKey} update={update} />
         </div>
         <p className="text-muted-foreground mt-2 max-w-2xl">{def.description}</p>
       </div>
 
-      {!done ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="rounded-full bg-accent/10 p-4 mb-4"><FileQuestion className="h-6 w-6 text-accent" /></div>
-            <h3 className="font-display text-lg mb-2">Section non générée</h3>
-            <p className="text-sm text-muted-foreground max-w-md mb-6">
-              Lance la génération depuis le hub de la boîte à outils, ou régénère uniquement cette section avec le bouton ci-dessus.
-            </p>
-            <Link href={`/missions/${mission.id}/boite-a-outils`}>
-              <Button variant="outline">Retour au hub</Button>
-            </Link>
-          </CardContent>
-        </Card>
+      {!anyJobDone ? (
+        <EmptySectionPlaceholder mission={mission} sectionKey={sectionKey} update={update} />
       ) : (
-        <SectionEditor
+        <SectionContent
           sectionKey={sectionKey}
-          toolbox={tb}
+          mission={mission}
           patch={patchToolbox}
+          update={update}
         />
       )}
     </main>
   );
 }
 
-function SectionEditor({
-  sectionKey,
-  toolbox,
-  patch,
-}: {
-  sectionKey: SectionKey;
-  toolbox: Toolbox;
-  patch: (next: Partial<Toolbox>) => void;
-}) {
-  switch (sectionKey) {
-    case "positioning":
-      return <PositioningEditor value={toolbox.positioning} onChange={(v) => patch({ positioning: v })} />;
-    case "personas":
-      return <PersonasEditor value={toolbox.personas} onChange={(v) => patch({ personas: v })} />;
-    case "arguments":
-      return (
-        <ArgumentsEditor
-          disqualified={toolbox.disqualified}
-          killerArguments={toolbox.killerArguments}
-          setDisqualified={(s) => patch({ disqualified: s })}
-          setKillerArguments={(v) => patch({ killerArguments: v })}
-        />
-      );
-    case "pitch":
-      return <PitchEditor value={toolbox.pitch} onChange={(v) => patch({ pitch: v })} />;
-    case "objections":
-      return <ObjectionsEditor value={toolbox.objections} onChange={(v) => patch({ objections: v })} />;
-    case "qualification":
-      return <QualificationEditor value={toolbox.qualification} onChange={(v) => patch({ qualification: v })} />;
-  }
-}
-
-function RegenerateSectionButton({
+function EmptySectionPlaceholder({
   mission,
   sectionKey,
   update,
 }: {
-  mission: ReturnType<typeof useMission>["mission"];
+  mission: NonNullable<ReturnType<typeof useMission>["mission"]>;
   sectionKey: SectionKey;
   update: ReturnType<typeof useMission>["update"];
+}) {
+  return (
+    <Card className="border-dashed">
+      <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="rounded-full bg-accent/10 p-4 mb-4"><FileQuestion className="h-6 w-6 text-accent" /></div>
+        <h3 className="font-display text-lg mb-2">Section non générée</h3>
+        <p className="text-sm text-muted-foreground max-w-md mb-6">
+          Lance la génération depuis le hub de la boîte à outils, ou régénère uniquement cette section avec le bouton ci-dessous.
+        </p>
+        <RegenerateAllInSection mission={mission} sectionKey={sectionKey} update={update} variant="accent" />
+      </CardContent>
+    </Card>
+  );
+}
+
+function SectionContent({
+  sectionKey,
+  mission,
+  patch,
+  update,
+}: {
+  sectionKey: SectionKey;
+  mission: NonNullable<ReturnType<typeof useMission>["mission"]>;
+  patch: (next: Partial<Toolbox>) => void;
+  update: ReturnType<typeof useMission>["update"];
+}) {
+  const tb = mission.toolbox ?? emptyToolbox();
+
+  switch (sectionKey) {
+    case "positioning":
+      return <PositioningEditor value={tb.positioning} onChange={(v) => patch({ positioning: v })} />;
+
+    case "personas":
+      return <PersonasEditor value={tb.personas} onChange={(v) => patch({ personas: v })} />;
+
+    case "arguments":
+      return (
+        <ArgumentsEditor
+          disqualified={tb.disqualified}
+          killerArguments={tb.killerArguments}
+          setDisqualified={(s) => patch({ disqualified: s })}
+          setKillerArguments={(v) => patch({ killerArguments: v })}
+        />
+      );
+
+    case "qualification":
+      return <QualificationEditor value={tb.qualification} onChange={(v) => patch({ qualification: v })} />;
+
+    case "pitch":
+      return <PitchPerSubsection mission={mission} update={update} />;
+
+    case "objections":
+      return <ObjectionsPerCategory mission={mission} update={update} />;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Pitch — chaque sous-section avec son bouton « Régénérer ce bloc »
+// -----------------------------------------------------------------------------
+function PitchPerSubsection({
+  mission,
+  update,
+}: {
+  mission: NonNullable<ReturnType<typeof useMission>["mission"]>;
+  update: ReturnType<typeof useMission>["update"];
+}) {
+  const tb = mission.toolbox ?? emptyToolbox();
+  const ids: PitchId[] = ["1.0", "1.1", "2.0", "3.0", "4.0", "5.0"];
+
+  return (
+    <div className="space-y-5">
+      {ids.map((id) => {
+        const section = tb.pitch.find((p) => p.id === id);
+        const job: Job = { type: "pitch_section", id };
+        return (
+          <Card key={id}>
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <Badge variant="accent">{id}</Badge>
+                  <CardTitle className="text-base mt-1.5">{PITCH_SECTION_LABELS[id]}</CardTitle>
+                </div>
+                <RegenerateJobButton mission={mission} job={job} update={update} compact />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {section && section.scripts.length > 0 ? (
+                <div className="space-y-3">
+                  {section.scripts.map((s, i) => (
+                    <div key={i} className="border-l-2 border-accent/30 pl-4 space-y-2">
+                      <input
+                        className="text-xs uppercase tracking-wider text-accent w-full bg-transparent focus:outline-none font-medium"
+                        value={s.variant}
+                        onChange={(e) => {
+                          const updated = { ...section, scripts: section.scripts.map((sc, idx) => idx === i ? { ...sc, variant: e.target.value } : sc) };
+                          update((prev) => ({
+                            ...prev,
+                            toolbox: {
+                              ...(prev.toolbox ?? emptyToolbox()),
+                              pitch: (prev.toolbox?.pitch ?? []).map((p) => p.id === id ? updated : p),
+                            },
+                          }));
+                        }}
+                      />
+                      <textarea
+                        rows={5}
+                        className="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        value={s.text}
+                        onChange={(e) => {
+                          const updated = { ...section, scripts: section.scripts.map((sc, idx) => idx === i ? { ...sc, text: e.target.value } : sc) };
+                          update((prev) => ({
+                            ...prev,
+                            toolbox: {
+                              ...(prev.toolbox ?? emptyToolbox()),
+                              pitch: (prev.toolbox?.pitch ?? []).map((p) => p.id === id ? updated : p),
+                            },
+                          }));
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Bloc non généré. Clique sur « Régénérer ce bloc » pour le produire.</p>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Objections — chaque famille avec son bouton « Régénérer cette famille »
+// -----------------------------------------------------------------------------
+function ObjectionsPerCategory({
+  mission,
+  update,
+}: {
+  mission: NonNullable<ReturnType<typeof useMission>["mission"]>;
+  update: ReturnType<typeof useMission>["update"];
+}) {
+  const tb = mission.toolbox ?? emptyToolbox();
+  const codes: ObjectionCode[] = ["A", "B", "C", "D", "E"];
+
+  return (
+    <div className="space-y-6">
+      {codes.map((code) => {
+        const items = tb.objections.filter((o) => o.category === code).sort((a, b) => a.id - b.id);
+        const job: Job = { type: "objection_category", code };
+        return (
+          <Card key={code}>
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Badge variant="accent">{code}</Badge>
+                  <CardTitle className="text-base">{OBJECTION_CATEGORY_LABELS[code]}</CardTitle>
+                  <span className="text-xs text-muted-foreground">— {items.length} / 6 objections</span>
+                </div>
+                <RegenerateJobButton mission={mission} job={job} update={update} compact />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {items.length > 0 ? (
+                <ObjectionsEditor
+                  value={items}
+                  onChange={(next) => {
+                    const others = tb.objections.filter((o) => o.category !== code);
+                    update((prev) => ({
+                      ...prev,
+                      toolbox: { ...(prev.toolbox ?? emptyToolbox()), objections: [...others, ...next].sort((a, b) => a.id - b.id) },
+                    }));
+                  }}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Famille non générée. Clique sur « Régénérer cette famille ».</p>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Boutons régénération (job seul, ou tous les jobs d'une section)
+// -----------------------------------------------------------------------------
+function RegenerateJobButton({
+  mission,
+  job,
+  update,
+  compact,
+}: {
+  mission: NonNullable<ReturnType<typeof useMission>["mission"]>;
+  job: Job;
+  update: ReturnType<typeof useMission>["update"];
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [instructions, setInstructions] = useState("");
 
-  if (!mission) return null;
-
   async function regen() {
-    if (!mission) return;
     setBusy(true);
     setError(null);
     try {
       const res = await fetch("/api/ai/generate-toolbox-section", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mission, section: sectionKey, refineInstructions: instructions.trim() || undefined }),
+        body: JSON.stringify({ mission, job, refineInstructions: instructions.trim() || undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? `Erreur ${res.status}`);
 
-      const sectionData = data.data as Record<string, unknown>;
-      update((prev) => {
-        const tb = prev.toolbox ?? emptyToolbox();
-        switch (sectionKey) {
-          case "positioning":
-            return { ...prev, toolbox: { ...tb, positioning: sectionData as Toolbox["positioning"] } };
-          case "personas":
-            return { ...prev, toolbox: { ...tb, personas: (sectionData.personas ?? []) as Toolbox["personas"] } };
-          case "arguments":
-            return {
-              ...prev,
-              toolbox: {
-                ...tb,
-                disqualified: (sectionData.disqualified ?? "") as string,
-                killerArguments: (sectionData.killerArguments ?? []) as Toolbox["killerArguments"],
-              },
-            };
-          case "pitch":
-            return { ...prev, toolbox: { ...tb, pitch: (sectionData.pitch ?? []) as Toolbox["pitch"] } };
-          case "objections":
-            return { ...prev, toolbox: { ...tb, objections: (sectionData.objections ?? []) as Toolbox["objections"] } };
-          case "qualification":
-            return { ...prev, toolbox: { ...tb, qualification: (sectionData.qualification ?? { criteria: [], tiers: [] }) as Toolbox["qualification"] } };
-          default:
-            return prev;
-        }
-      });
+      update((prev) => ({ ...prev, toolbox: mergeJobResult(prev.toolbox ?? emptyToolbox(), job, data.data) }));
       setOpen(false);
       setInstructions("");
     } catch (err) {
@@ -178,33 +329,154 @@ function RegenerateSectionButton({
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} variant="outline" size="sm">
-        <RefreshCw /> Régénérer cette section
+      <Button onClick={() => setOpen(true)} variant="outline" size={compact ? "sm" : "default"}>
+        <RefreshCw /> {compact ? "Régénérer ce bloc" : "Régénérer cette section"}
       </Button>
       <Dialog open={open} onOpenChange={(v) => { if (!busy) setOpen(v); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Régénérer</DialogTitle>
-            <DialogDescription>L'IA va remplacer le contenu de cette section. Le reste de la boîte n'est pas touché.</DialogDescription>
+            <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> {jobLabel(job)}</DialogTitle>
+            <DialogDescription>L'IA va remplacer ce bloc seul. Le reste de la boîte n'est pas touché.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-2">
-            <Label htmlFor="regen-instructions">Instructions (optionnel)</Label>
-            <Input
-              id="regen-instructions"
-              value={instructions}
-              onChange={(e) => setInstructions(e.target.value)}
-              placeholder="Plus court, plus direct, prioriser persona dirigeant…"
-              disabled={busy}
-            />
-          </div>
+          {!busy && (
+            <div className="grid gap-2">
+              <Label htmlFor="regen-instructions">Instructions (optionnel)</Label>
+              <Input
+                id="regen-instructions"
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value)}
+                placeholder="Plus court, plus direct, ton plus terrain…"
+                disabled={busy}
+              />
+            </div>
+          )}
+          {busy && <div className="py-4"><AiThinking label={`Génération ${jobLabel(job).toLowerCase()}`} size="md" /></div>}
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex justify-end gap-2">
             <DialogClose asChild>
-              <Button variant="ghost" disabled={busy}>Annuler</Button>
+              <Button variant="ghost" disabled={busy}>Fermer</Button>
             </DialogClose>
-            <Button onClick={regen} variant="accent" disabled={busy}>
-              {busy ? <><Loader2 className="animate-spin" /> Génération…</> : <><RefreshCw /> Régénérer</>}
-            </Button>
+            {!busy && (
+              <Button onClick={regen} variant="accent">
+                <RefreshCw /> Régénérer
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function RegenerateAllInSection({
+  mission,
+  sectionKey,
+  update,
+  variant = "outline",
+}: {
+  mission: NonNullable<ReturnType<typeof useMission>["mission"]>;
+  sectionKey: SectionKey;
+  update: ReturnType<typeof useMission>["update"];
+  variant?: "outline" | "accent";
+}) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [instructions, setInstructions] = useState("");
+  const [progress, setProgress] = useState<{ done: number; total: number; current: string } | null>(null);
+  const cancelRef = useRef(false);
+  const def = SECTION_DEFS.find((s) => s.key === sectionKey)!;
+
+  async function regen() {
+    setBusy(true);
+    setError(null);
+    cancelRef.current = false;
+
+    const jobs = expandSectionToJobs(sectionKey);
+    setProgress({ done: 0, total: jobs.length, current: jobLabel(jobs[0]) });
+
+    let workingTb: Toolbox = mission.toolbox ?? emptyToolbox();
+
+    try {
+      for (let i = 0; i < jobs.length; i++) {
+        if (cancelRef.current) break;
+        const job = jobs[i];
+        setProgress({ done: i, total: jobs.length, current: jobLabel(job) });
+        const res = await fetch("/api/ai/generate-toolbox-section", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mission: { ...mission, toolbox: workingTb },
+            job,
+            refineInstructions: instructions.trim() || undefined,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? `Erreur ${res.status}`);
+        workingTb = mergeJobResult(workingTb, job, data.data);
+        update((prev) => ({ ...prev, toolbox: mergeJobResult(prev.toolbox ?? emptyToolbox(), job, data.data) }));
+        setProgress({ done: i + 1, total: jobs.length, current: `${jobLabel(job)} ✓` });
+      }
+      if (!cancelRef.current) {
+        setOpen(false);
+        setInstructions("");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setBusy(false);
+      setProgress(null);
+    }
+  }
+
+  return (
+    <>
+      <Button onClick={() => setOpen(true)} variant={variant} size="sm">
+        <RefreshCw /> Régénérer cette section ({def.key === "pitch" ? "6 blocs" : def.key === "objections" ? "5 familles" : "1 bloc"})
+      </Button>
+      <Dialog open={open} onOpenChange={(v) => { if (!busy) setOpen(v); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Régénérer {def.label}</DialogTitle>
+            <DialogDescription>L'IA va remplacer toute la section, bloc par bloc.</DialogDescription>
+          </DialogHeader>
+          {!busy && !progress && (
+            <div className="grid gap-2">
+              <Label htmlFor="sec-instructions">Instructions (optionnel)</Label>
+              <Input
+                id="sec-instructions"
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value)}
+                placeholder="Plus terrain, plus direct, focus sur cible chaude…"
+              />
+            </div>
+          )}
+          {progress && busy && (
+            <div className="space-y-3">
+              <AiThinking label={progress.current} size="md" />
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">Progression</span>
+                  <span className="tabular-nums text-muted-foreground">{progress.done}/{progress.total} blocs</span>
+                </div>
+                <Progress value={Math.round((progress.done / progress.total) * 100)} />
+              </div>
+            </div>
+          )}
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex justify-end gap-2">
+            {!busy && (
+              <DialogClose asChild>
+                <Button variant="ghost">Annuler</Button>
+              </DialogClose>
+            )}
+            {busy ? (
+              <Button onClick={() => { cancelRef.current = true; }} variant="outline"><StopCircle /> Stopper</Button>
+            ) : (
+              <Button onClick={regen} variant="accent">
+                <RefreshCw /> Lancer
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

@@ -25,7 +25,7 @@ export function Header({ trail }: { trail?: { label: string; href?: string }[] }
           )}
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <span className="text-xs text-muted-foreground uppercase tracking-[0.18em] hidden md:inline">Prospection Builder</span>
+          <span className="text-xs text-muted-foreground uppercase tracking-[0.18em] hidden md:inline">Onboarding Noxias</span>
           <UserMenu />
         </div>
       </div>

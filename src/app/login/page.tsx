@@ -12,7 +12,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div className="bg-card border rounded-xl shadow-sm p-8">
           <h1 className="font-display text-2xl font-bold tracking-tight mb-2">Connexion</h1>
           <p className="text-sm text-muted-foreground mb-6">
-            Reçois un lien magique par email pour accéder au Prospection Builder.
+            Reçois un lien magique par email pour accéder à l'Onboarding Noxias.
           </p>
           <LoginForm next={sp.next} initialError={sp.error} />
         </div>

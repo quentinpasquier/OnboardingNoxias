@@ -10,7 +10,7 @@ const ubuntu = Ubuntu({
 });
 
 export const metadata: Metadata = {
-  title: "Noxias — Prospection Builder",
+  title: "Onboarding Noxias",
   description: "Co-construire la matrice de prospection et la boîte à outils du commercial avec votre client. IA + intervention humaine.",
 };
 

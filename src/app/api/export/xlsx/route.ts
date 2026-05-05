@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     const { mission } = (await req.json()) as { mission: Mission };
 
     const wb = new ExcelJS.Workbook();
-    wb.creator = "Noxias Prospection Builder";
+    wb.creator = "Onboarding Noxias";
     wb.created = new Date();
 
     const ws = wb.addWorksheet("Matrice de prospection", {

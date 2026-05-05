@@ -18,7 +18,7 @@ export function missionToMarkdown(mission: Mission, opts: { scope?: ExportScope 
   if (scope === "matrix") lines.push(`# ${mission.clientName} — Matrice de prospection`);
   else if (scope === "toolbox") lines.push(`# ${mission.clientName} — Boîte à outils du commercial`);
   else lines.push(`# ${mission.clientName} — Livrables prospection`);
-  lines.push(`*Généré par Noxias Prospection Builder*\n`);
+  lines.push(`*Généré par Onboarding Noxias*\n`);
 
   if (scope === "matrix" || scope === "both") {
     if (scope === "both") lines.push(`\n## Matrice de prospection\n`);

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Plus, Trash2 } from "lucide-react";
 
 export function PositioningEditor({ value, onChange }: { value: Toolbox["positioning"]; onChange: (v: Toolbox["positioning"]) => void }) {
   const longFields: { key: keyof Toolbox["positioning"]; label: string; rows: number }[] = [
@@ -92,20 +93,43 @@ const PERSONA_FIELD_LABEL: Record<string, string> = {
 };
 
 export function PersonasEditor({ value, onChange }: { value: Toolbox["personas"]; onChange: (v: Toolbox["personas"]) => void }) {
+  function addPersona() {
+    onChange([
+      ...value,
+      {
+        title: `Persona ${value.length + 1} : (à compléter)`,
+        profile: "",
+        kpis: "",
+        pains: "",
+        motivations: "",
+        triggers: "",
+      },
+    ]);
+  }
+
+  function removePersona(index: number) {
+    onChange(value.filter((_, i) => i !== index));
+  }
+
   return (
     <div className="space-y-4">
       {value.map((p, i) => (
         <Card key={i}>
-          <CardHeader>
-            <input
-              className="font-display text-lg w-full bg-transparent focus:outline-none"
-              value={p.title}
-              onChange={(e) => {
-                const next = [...value];
-                next[i] = { ...p, title: e.target.value };
-                onChange(next);
-              }}
-            />
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-3">
+              <input
+                className="font-display text-lg w-full bg-transparent focus:outline-none"
+                value={p.title}
+                onChange={(e) => {
+                  const next = [...value];
+                  next[i] = { ...p, title: e.target.value };
+                  onChange(next);
+                }}
+              />
+              <Button variant="ghost" size="sm" onClick={() => removePersona(i)} className="text-muted-foreground hover:text-destructive shrink-0">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="grid md:grid-cols-2 gap-3">
             {(["profile", "kpis", "pains", "motivations", "triggers"] as const).map((k) => (
@@ -125,6 +149,9 @@ export function PersonasEditor({ value, onChange }: { value: Toolbox["personas"]
           </CardContent>
         </Card>
       ))}
+      <Button onClick={addPersona} variant="outline" className="w-full border-dashed">
+        <Plus /> Ajouter un persona manuellement
+      </Button>
     </div>
   );
 }
@@ -140,6 +167,10 @@ export function ArgumentsEditor({
   setDisqualified: (s: string) => void;
   setKillerArguments: (v: Toolbox["killerArguments"]) => void;
 }) {
+  function addArgument() {
+    setKillerArguments([...killerArguments, { headline: "(à compléter)", body: "" }]);
+  }
+
   return (
     <div className="space-y-4">
       <Card>
@@ -152,15 +183,25 @@ export function ArgumentsEditor({
         {killerArguments.map((a, i) => (
           <Card key={i}>
             <CardHeader className="pb-2">
-              <input
-                className="font-display text-base w-full bg-transparent focus:outline-none italic"
-                value={a.headline}
-                onChange={(e) => {
-                  const next = [...killerArguments];
-                  next[i] = { ...a, headline: e.target.value };
-                  setKillerArguments(next);
-                }}
-              />
+              <div className="flex items-start justify-between gap-2">
+                <input
+                  className="font-display text-base w-full bg-transparent focus:outline-none italic"
+                  value={a.headline}
+                  onChange={(e) => {
+                    const next = [...killerArguments];
+                    next[i] = { ...a, headline: e.target.value };
+                    setKillerArguments(next);
+                  }}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setKillerArguments(killerArguments.filter((_, idx) => idx !== i))}
+                  className="text-muted-foreground hover:text-destructive shrink-0 -mt-1"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <Textarea
@@ -176,6 +217,9 @@ export function ArgumentsEditor({
           </Card>
         ))}
       </div>
+      <Button onClick={addArgument} variant="outline" className="w-full border-dashed">
+        <Plus /> Ajouter un argument manuellement
+      </Button>
     </div>
   );
 }
@@ -223,6 +267,69 @@ export function PitchEditor({ value, onChange }: { value: Toolbox["pitch"]; onCh
   );
 }
 
+/**
+ * Liste plate d'objections (pas de regroupement interne par catégorie).
+ * À utiliser quand le composant parent gère déjà l'affichage par famille.
+ */
+export function ObjectionsListEditor({
+  value,
+  onChange,
+  onAdd,
+}: {
+  value: Toolbox["objections"];
+  onChange: (v: Toolbox["objections"]) => void;
+  onAdd: () => void;
+}) {
+  return (
+    <div className="space-y-2">
+      {value.map((o) => {
+        const idx = value.findIndex((x) => x.id === o.id);
+        return (
+          <Card key={o.id} className="bg-secondary/30">
+            <CardContent className="pt-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <input
+                  className="text-sm font-medium w-full bg-transparent focus:outline-none italic"
+                  value={o.text}
+                  onChange={(e) => {
+                    const next = [...value];
+                    next[idx] = { ...o, text: e.target.value };
+                    onChange(next);
+                  }}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onChange(value.filter((x) => x.id !== o.id))}
+                  className="text-muted-foreground hover:text-destructive shrink-0 -mt-1 h-7 w-7 p-0"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <Textarea
+                rows={4}
+                value={o.response}
+                onChange={(e) => {
+                  const next = [...value];
+                  next[idx] = { ...o, response: e.target.value };
+                  onChange(next);
+                }}
+              />
+            </CardContent>
+          </Card>
+        );
+      })}
+      <Button onClick={onAdd} variant="outline" size="sm" className="border-dashed">
+        <Plus /> Ajouter une objection manuellement
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * Ancien éditeur regroupé par catégorie — conservé pour rétro-compat si
+ * jamais utilisé ailleurs. Préférer ObjectionsListEditor + parent qui groupe.
+ */
 export function ObjectionsEditor({ value, onChange }: { value: Toolbox["objections"]; onChange: (v: Toolbox["objections"]) => void }) {
   const grouped = OBJECTION_CATEGORIES.map((cat) => ({
     ...cat,
@@ -235,35 +342,19 @@ export function ObjectionsEditor({ value, onChange }: { value: Toolbox["objectio
           <h4 className="font-display text-base font-medium mb-3 flex items-center gap-2">
             <Badge variant="accent">{g.code}</Badge> {g.label} <span className="text-xs text-muted-foreground font-sans font-normal">— {g.items.length} objections</span>
           </h4>
-          <div className="space-y-2">
-            {g.items.map((o) => {
-              const idx = value.findIndex((x) => x.id === o.id);
-              return (
-                <Card key={o.id}>
-                  <CardContent className="pt-4 space-y-2">
-                    <input
-                      className="text-sm font-medium w-full bg-transparent focus:outline-none italic"
-                      value={o.text}
-                      onChange={(e) => {
-                        const next = [...value];
-                        next[idx] = { ...o, text: e.target.value };
-                        onChange(next);
-                      }}
-                    />
-                    <Textarea
-                      rows={4}
-                      value={o.response}
-                      onChange={(e) => {
-                        const next = [...value];
-                        next[idx] = { ...o, response: e.target.value };
-                        onChange(next);
-                      }}
-                    />
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+          <ObjectionsListEditor
+            value={g.items}
+            onChange={(next) => {
+              const others = value.filter((o) => o.category !== g.code);
+              onChange([...others, ...next].sort((a, b) => a.id - b.id));
+            }}
+            onAdd={() => {
+              const others = value.filter((o) => o.category !== g.code);
+              const maxIdInCat = g.items.reduce((m, o) => Math.max(m, o.id), 0);
+              const nextId = Math.max(maxIdInCat + 1, value.reduce((m, o) => Math.max(m, o.id), 0) + 1);
+              onChange([...others, ...g.items, { id: nextId, category: g.code, text: "(nouvelle objection)", response: "" }].sort((a, b) => a.id - b.id));
+            }}
+          />
         </div>
       ))}
     </div>

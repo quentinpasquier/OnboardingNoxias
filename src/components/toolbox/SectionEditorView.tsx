@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, RefreshCw, Sparkles, FileQuestion, StopCircle } from "lucide-react";
+import { ArrowLeft, RefreshCw, Sparkles, FileQuestion, StopCircle, Plus } from "lucide-react";
 import { useMission } from "@/hooks/use-mission";
 import type { Toolbox } from "@/lib/toolbox-schema";
 import {
@@ -32,7 +32,7 @@ import {
   PositioningEditor,
   PersonasEditor,
   ArgumentsEditor,
-  ObjectionsEditor,
+  ObjectionsListEditor,
   QualificationEditor,
 } from "@/components/toolbox/editors";
 
@@ -78,15 +78,18 @@ export function SectionEditorView({ missionId, sectionKey }: { missionId: string
         <p className="text-muted-foreground mt-2 max-w-2xl">{def.description}</p>
       </div>
 
-      {!anyJobDone ? (
-        <EmptySectionPlaceholder mission={mission} sectionKey={sectionKey} update={update} />
-      ) : (
+      {/* Pour pitch et objections : on affiche TOUJOURS les sous-blocs (même non générés)
+          pour permettre la régénération individuelle ou la saisie manuelle.
+          Pour les autres sections : un placeholder s'affiche si rien n'est généré. */}
+      {(sectionKey === "pitch" || sectionKey === "objections") || anyJobDone ? (
         <SectionContent
           sectionKey={sectionKey}
           mission={mission}
           patch={patchToolbox}
           update={update}
         />
+      ) : (
+        <EmptySectionPlaceholder mission={mission} sectionKey={sectionKey} update={update} />
       )}
     </main>
   );
@@ -157,7 +160,7 @@ function SectionContent({
 }
 
 // -----------------------------------------------------------------------------
-// Pitch — chaque sous-section avec son bouton « Régénérer ce bloc »
+// Pitch — chaque sous-section avec ses scripts éditables + boutons IA et manuel
 // -----------------------------------------------------------------------------
 function PitchPerSubsection({
   mission,
@@ -169,47 +172,82 @@ function PitchPerSubsection({
   const tb = mission.toolbox ?? emptyToolbox();
   const ids: PitchId[] = ["1.0", "1.1", "2.0", "3.0", "4.0", "5.0"];
 
+  function addScript(id: PitchId) {
+    update((prev) => {
+      const tb = prev.toolbox ?? emptyToolbox();
+      const existing = tb.pitch.find((p) => p.id === id);
+      const updatedSection = existing
+        ? { ...existing, scripts: [...existing.scripts, { variant: "Variante (à compléter)", text: "" }] }
+        : { id, label: PITCH_SECTION_LABELS[id], scripts: [{ variant: "Variante (à compléter)", text: "" }] };
+      const others = tb.pitch.filter((p) => p.id !== id);
+      return { ...prev, toolbox: { ...tb, pitch: [...others, updatedSection].sort((a, b) => a.id.localeCompare(b.id)) } };
+    });
+  }
+
+  function removeScript(id: PitchId, idx: number) {
+    update((prev) => {
+      const tb = prev.toolbox ?? emptyToolbox();
+      const existing = tb.pitch.find((p) => p.id === id);
+      if (!existing) return prev;
+      const updated = { ...existing, scripts: existing.scripts.filter((_, i) => i !== idx) };
+      return { ...prev, toolbox: { ...tb, pitch: tb.pitch.map((p) => p.id === id ? updated : p) } };
+    });
+  }
+
   return (
     <div className="space-y-5">
       {ids.map((id) => {
         const section = tb.pitch.find((p) => p.id === id);
         const job: Job = { type: "pitch_section", id };
+        const hasContent = !!section && section.scripts.length > 0;
         return (
           <Card key={id}>
             <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="accent">{id}</Badge>
-                  <CardTitle className="text-base mt-1.5">{PITCH_SECTION_LABELS[id]}</CardTitle>
+                  <CardTitle className="text-base">{PITCH_SECTION_LABELS[id]}</CardTitle>
+                  {hasContent && <span className="text-xs text-muted-foreground">— {section!.scripts.length} script{section!.scripts.length > 1 ? "s" : ""}</span>}
                 </div>
                 <RegenerateJobButton mission={mission} job={job} update={update} compact />
               </div>
             </CardHeader>
             <CardContent>
-              {section && section.scripts.length > 0 ? (
+              {hasContent ? (
                 <div className="space-y-3">
-                  {section.scripts.map((s, i) => (
-                    <div key={i} className="border-l-2 border-accent/30 pl-4 space-y-2">
-                      <input
-                        className="text-xs uppercase tracking-wider text-accent w-full bg-transparent focus:outline-none font-medium"
-                        value={s.variant}
-                        onChange={(e) => {
-                          const updated = { ...section, scripts: section.scripts.map((sc, idx) => idx === i ? { ...sc, variant: e.target.value } : sc) };
-                          update((prev) => ({
-                            ...prev,
-                            toolbox: {
-                              ...(prev.toolbox ?? emptyToolbox()),
-                              pitch: (prev.toolbox?.pitch ?? []).map((p) => p.id === id ? updated : p),
-                            },
-                          }));
-                        }}
-                      />
+                  {section!.scripts.map((s, i) => (
+                    <div key={i} className="border-l-2 border-accent/30 pl-4 space-y-2 group/script relative">
+                      <div className="flex items-start justify-between gap-2">
+                        <input
+                          className="text-xs uppercase tracking-wider text-accent w-full bg-transparent focus:outline-none font-medium"
+                          value={s.variant}
+                          onChange={(e) => {
+                            const updated = { ...section!, scripts: section!.scripts.map((sc, idx) => idx === i ? { ...sc, variant: e.target.value } : sc) };
+                            update((prev) => ({
+                              ...prev,
+                              toolbox: {
+                                ...(prev.toolbox ?? emptyToolbox()),
+                                pitch: (prev.toolbox?.pitch ?? []).map((p) => p.id === id ? updated : p),
+                              },
+                            }));
+                          }}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeScript(id, i)}
+                          className="opacity-0 group-hover/script:opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0 h-7 w-7 p-0"
+                          aria-label="Supprimer ce script"
+                        >
+                          ×
+                        </Button>
+                      </div>
                       <textarea
                         rows={5}
                         className="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         value={s.text}
                         onChange={(e) => {
-                          const updated = { ...section, scripts: section.scripts.map((sc, idx) => idx === i ? { ...sc, text: e.target.value } : sc) };
+                          const updated = { ...section!, scripts: section!.scripts.map((sc, idx) => idx === i ? { ...sc, text: e.target.value } : sc) };
                           update((prev) => ({
                             ...prev,
                             toolbox: {
@@ -223,8 +261,11 @@ function PitchPerSubsection({
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground italic">Bloc non généré. Clique sur « Régénérer ce bloc » pour le produire.</p>
+                <p className="text-sm text-muted-foreground italic mb-3">Aucun script pour ce bloc. Régénère via l'IA ou ajoute un script manuellement.</p>
               )}
+              <Button onClick={() => addScript(id)} variant="outline" size="sm" className="border-dashed mt-3">
+                <Plus /> Ajouter un script manuellement
+              </Button>
             </CardContent>
           </Card>
         );
@@ -234,7 +275,7 @@ function PitchPerSubsection({
 }
 
 // -----------------------------------------------------------------------------
-// Objections — chaque famille avec son bouton « Régénérer cette famille »
+// Objections — chaque famille avec ses 6 objections éditables + boutons IA et manuel
 // -----------------------------------------------------------------------------
 function ObjectionsPerCategory({
   mission,
@@ -246,8 +287,37 @@ function ObjectionsPerCategory({
   const tb = mission.toolbox ?? emptyToolbox();
   const codes: ObjectionCode[] = ["A", "B", "C", "D", "E"];
 
+  function addObjectionToCategory(code: ObjectionCode) {
+    update((prev) => {
+      const tb = prev.toolbox ?? emptyToolbox();
+      const itemsInCat = tb.objections.filter((o) => o.category === code);
+      const maxId = tb.objections.reduce((m, o) => Math.max(m, o.id), 0);
+      const startId = ({ A: 1, B: 7, C: 13, D: 19, E: 25 } as Record<ObjectionCode, number>)[code];
+      // Si la famille est vide, on commence à son startId. Sinon on prend le max + 1 (peut sortir de la plage idéale, c'est OK).
+      const newId = itemsInCat.length === 0 ? startId : Math.max(maxId + 1, itemsInCat.reduce((m, o) => Math.max(m, o.id), 0) + 1);
+      return {
+        ...prev,
+        toolbox: {
+          ...tb,
+          objections: [
+            ...tb.objections,
+            { id: newId, category: code, text: "(nouvelle objection)", response: "" },
+          ].sort((a, b) => a.id - b.id),
+        },
+      };
+    });
+  }
+
+  function setItemsForCategory(code: ObjectionCode, next: typeof tb.objections) {
+    update((prev) => {
+      const tb = prev.toolbox ?? emptyToolbox();
+      const others = tb.objections.filter((o) => o.category !== code);
+      return { ...prev, toolbox: { ...tb, objections: [...others, ...next].sort((a, b) => a.id - b.id) } };
+    });
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {codes.map((code) => {
         const items = tb.objections.filter((o) => o.category === code).sort((a, b) => a.id - b.id);
         const job: Job = { type: "objection_category", code };
@@ -255,7 +325,7 @@ function ObjectionsPerCategory({
           <Card key={code}>
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="accent">{code}</Badge>
                   <CardTitle className="text-base">{OBJECTION_CATEGORY_LABELS[code]}</CardTitle>
                   <span className="text-xs text-muted-foreground">— {items.length} / 6 objections</span>
@@ -264,20 +334,14 @@ function ObjectionsPerCategory({
               </div>
             </CardHeader>
             <CardContent>
-              {items.length > 0 ? (
-                <ObjectionsEditor
-                  value={items}
-                  onChange={(next) => {
-                    const others = tb.objections.filter((o) => o.category !== code);
-                    update((prev) => ({
-                      ...prev,
-                      toolbox: { ...(prev.toolbox ?? emptyToolbox()), objections: [...others, ...next].sort((a, b) => a.id - b.id) },
-                    }));
-                  }}
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground italic">Famille non générée. Clique sur « Régénérer cette famille ».</p>
+              {items.length === 0 && (
+                <p className="text-sm text-muted-foreground italic mb-3">Aucune objection dans cette famille. Régénère via l'IA ou ajoute manuellement.</p>
               )}
+              <ObjectionsListEditor
+                value={items}
+                onChange={(next) => setItemsForCategory(code, next)}
+                onAdd={() => addObjectionToCategory(code)}
+              />
             </CardContent>
           </Card>
         );

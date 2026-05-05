@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Noxias brand placeholder — édité dans un seul endroit.
+ * Le client peut remplacer ces 4 variables par ses propres tokens
+ * (logo SVG dans /public/brand/logo.svg, fonts dans layout.tsx).
+ */
+:root {
+  --noxias-ink: 220 35% 9%;        /* #0F1421 deep ink */
+  --noxias-paper: 36 33% 97%;       /* #FAF8F2 warm paper */
+  --noxias-accent: 28 60% 55%;      /* #C8A36F brushed gold/copper */
+  --noxias-muted: 220 12% 45%;      /* #6A7280 slate */
+
+  --background: var(--noxias-paper);
+  --foreground: var(--noxias-ink);
+  --card: 0 0% 100%;
+  --card-foreground: var(--noxias-ink);
+  --popover: 0 0% 100%;
+  --popover-foreground: var(--noxias-ink);
+  --primary: var(--noxias-ink);
+  --primary-foreground: var(--noxias-paper);
+  --secondary: 36 28% 92%;
+  --secondary-foreground: var(--noxias-ink);
+  --muted: 36 20% 94%;
+  --muted-foreground: var(--noxias-muted);
+  --accent: var(--noxias-accent);
+  --accent-foreground: var(--noxias-ink);
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 36 18% 88%;
+  --input: 36 18% 88%;
+  --ring: var(--noxias-accent);
+  --radius: 0.5rem;
+}
+
+* { border-color: hsl(var(--border)); }
+
+html, body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-feature-settings: "rlig" 1, "calt" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .font-display { font-family: var(--font-display), Georgia, serif; letter-spacing: -0.02em; }
+
+.noxias-grain {
+  background-image: radial-gradient(hsl(var(--noxias-ink) / 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Subtle scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--noxias-muted) / 0.5); }

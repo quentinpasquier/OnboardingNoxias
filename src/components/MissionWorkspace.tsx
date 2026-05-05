@@ -40,6 +40,7 @@ export function MissionWorkspace({ missionId }: { missionId: string }) {
   }
 
   const answered = Object.values(mission.matrix).filter((v) => v && v.trim().length > 0).length;
+  const drafts = MATRIX_QUESTIONS.filter((q) => mission.matrix[q.id]?.trim() && mission.matrixStatus?.[q.id] === "draft").length;
   const matrixPct = Math.round((answered / MATRIX_QUESTIONS.length) * 100);
   const toolboxReady = !!mission.toolbox;
 
@@ -70,7 +71,10 @@ export function MissionWorkspace({ missionId }: { missionId: string }) {
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="bg-secondary/60">
           <TabsTrigger value="context"><FileText className="h-4 w-4 mr-1.5" /> Contexte</TabsTrigger>
-          <TabsTrigger value="matrix"><ListChecks className="h-4 w-4 mr-1.5" /> Matrice ({answered}/{MATRIX_QUESTIONS.length})</TabsTrigger>
+          <TabsTrigger value="matrix">
+            <ListChecks className="h-4 w-4 mr-1.5" /> Matrice ({answered}/{MATRIX_QUESTIONS.length})
+            {drafts > 0 && <span className="ml-1.5 inline-flex items-center justify-center min-w-5 h-5 rounded-full bg-amber-200 text-amber-900 text-xs font-medium px-1.5">{drafts}</span>}
+          </TabsTrigger>
           <TabsTrigger value="toolbox"><Sparkles className="h-4 w-4 mr-1.5" /> Boîte à outils</TabsTrigger>
           <TabsTrigger value="export"><Download className="h-4 w-4 mr-1.5" /> Export</TabsTrigger>
         </TabsList>

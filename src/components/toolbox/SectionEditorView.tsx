@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, RefreshCw, Sparkles, FileQuestion, StopCircle, Plus } from "lucide-react";
+import { ArrowLeft, RefreshCw, Sparkles, StopCircle, Plus } from "lucide-react";
+import { BonhommeEmpty } from "@/components/illustrations/Bonhomme";
 import { useMission } from "@/hooks/use-mission";
 import type { Toolbox } from "@/lib/toolbox-schema";
 import {
@@ -105,12 +106,12 @@ function EmptySectionPlaceholder({
   update: ReturnType<typeof useMission>["update"];
 }) {
   return (
-    <Card className="border-dashed">
+    <Card className="border-dashed border-2 bg-secondary/30">
       <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="rounded-full bg-accent/10 p-4 mb-4"><FileQuestion className="h-6 w-6 text-accent" /></div>
-        <h3 className="font-display text-lg mb-2">Section non générée</h3>
+        <BonhommeEmpty size={120} className="mb-5" />
+        <h3 className="font-display text-xl font-bold mb-2">Section non générée</h3>
         <p className="text-sm text-muted-foreground max-w-md mb-6">
-          Lance la génération depuis le hub de la boîte à outils, ou régénère uniquement cette section avec le bouton ci-dessous.
+          Lance la génération via l'IA, ou ajoute le contenu manuellement quand l'éditeur sera ouvert.
         </p>
         <RegenerateAllInSection mission={mission} sectionKey={sectionKey} update={update} variant="accent" />
       </CardContent>

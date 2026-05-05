@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, ArrowRight, FileText, Sparkles, Loader2 } from "lucide-react";
+import { Plus, ArrowRight, FileText, Loader2 } from "lucide-react";
+import { BonhommeWelcome, BonhommeEmpty } from "@/components/illustrations/Bonhomme";
 import { missionsStore } from "@/lib/supabase/missions-store";
 import { emptyMission, type Mission } from "@/types/mission";
 import { Button } from "@/components/ui/button";
@@ -51,15 +52,22 @@ export function Dashboard() {
   if (missions === null && !error) return <DashboardLoadingSkeleton />;
 
   return (
-    <main className="container max-w-6xl py-12">
-      <section className="mb-12 noxias-hero-glow rounded-2xl p-8 md:p-10 -mx-2">
-        <p className="text-xs uppercase tracking-[0.22em] text-noxias-muted mb-4 font-medium">Co-construction client</p>
-        <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight mb-4 max-w-3xl leading-[1.05] text-noxias-ink">
-          Onboarding client <span className="text-accent">Noxias</span>
-        </h1>
-        <p className="text-noxias-muted max-w-2xl text-base md:text-lg leading-relaxed">
-          Deux ateliers structurés — Matrice de prospection puis Boîte à outils du commercial. L'IA propose, vous arbitrez avec votre client, les livrables sortent en deux clics.
-        </p>
+    <main className="container max-w-6xl py-12 noxias-page-in">
+      <section className="mb-14 noxias-hero-glow rounded-3xl p-8 md:p-12 -mx-2 relative overflow-hidden">
+        <div className="grid md:grid-cols-[1fr_auto] gap-6 items-center">
+          <div>
+            <p className="text-xs uppercase tracking-[0.22em] text-noxias-muted mb-4 font-medium">Co-construction client</p>
+            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 max-w-2xl leading-[1.02] text-noxias-ink">
+              Onboarding client <span className="text-accent">Noxias</span>
+            </h1>
+            <p className="text-noxias-muted max-w-xl text-base md:text-lg leading-relaxed">
+              Deux ateliers structurés — Matrice de prospection puis Boîte à outils du commercial. L'IA propose, vous arbitrez avec votre client, les livrables sortent en deux clics.
+            </p>
+          </div>
+          <div className="hidden md:block">
+            <BonhommeWelcome size={160} />
+          </div>
+        </div>
       </section>
 
       <div className="flex items-end justify-between mb-6">
@@ -109,12 +117,12 @@ export function Dashboard() {
       )}
 
       {missions !== null && missions.length === 0 && !error && (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="rounded-full bg-accent/10 p-4 mb-4"><Sparkles className="h-6 w-6 text-accent" /></div>
-            <h3 className="font-display text-lg mb-2">Aucune mission pour l'instant</h3>
-            <p className="text-sm text-muted-foreground max-w-md mb-6">Crée ta première mission pour démarrer un atelier de prospection avec un client. Tu pourras y associer des documents (brief, plaquette, site web) et co-construire les livrables.</p>
-            <Button onClick={() => setOpen(true)} variant="accent"><Plus /> Créer une mission</Button>
+        <Card className="border-dashed border-2 bg-secondary/30">
+          <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+            <BonhommeEmpty size={140} className="mb-6" />
+            <h3 className="font-display text-xl mb-2">Aucun onboarding pour l'instant</h3>
+            <p className="text-sm text-muted-foreground max-w-md mb-7">Crée ton premier onboarding pour démarrer un atelier de prospection avec un client. Tu pourras y associer des documents (brief, plaquette, site web) et co-construire les livrables.</p>
+            <Button onClick={() => setOpen(true)} variant="accent" size="lg"><Plus /> Créer un onboarding</Button>
           </CardContent>
         </Card>
       )}
@@ -165,28 +173,28 @@ function MissionCard({ mission }: { mission: Mission }) {
       className="group"
       title={`Ouvrir l'onboarding ${mission.clientName}`}
     >
-      <Card className={`h-full hover:border-accent/50 hover:shadow-md transition-all ${completed ? "bg-secondary/40" : ""}`}>
+      <Card className={`h-full hover:border-accent/50 hover:shadow-noxias-lift hover:-translate-y-0.5 transition-all duration-200 ${completed ? "bg-secondary/40" : ""}`}>
         <CardHeader>
           <div className="flex items-start justify-between gap-2">
             <CardTitle className="group-hover:text-accent transition-colors">{mission.clientName}</CardTitle>
             <div className="flex flex-col items-end gap-1.5">
               <Badge variant={completed ? "success" : "accent"}>
-                {completed ? "Terminé" : "En cours"}
+                {completed ? "✓ Terminé" : "● En cours"}
               </Badge>
               {toolboxReady && !completed && <Badge variant="secondary" className="text-[10px]">Boîte prête</Badge>}
             </div>
           </div>
-          <CardDescription>{mission.clientWebsite || "—"}</CardDescription>
+          <CardDescription className="truncate">{mission.clientWebsite || "—"}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-              <span>Matrice</span>
-              <span className="font-medium text-foreground">{answered}/{MATRIX_QUESTIONS.length}</span>
+              <span>Matrice de prospection</span>
+              <span className="font-medium text-foreground tabular-nums">{answered}/{MATRIX_QUESTIONS.length}</span>
             </div>
             <Progress value={matrixPct} />
           </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
+          <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t border-border/60">
             <span className="flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" /> {mission.files.length} document{mission.files.length > 1 ? "s" : ""}</span>
             <span>Maj {formatDate(mission.updatedAt)}</span>
           </div>

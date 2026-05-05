@@ -22,18 +22,21 @@
   --popover-foreground: var(--noxias-ink);
   --primary: var(--noxias-ink);
   --primary-foreground: var(--noxias-paper);
-  --secondary: 220 25% 96%;
+  --secondary: 220 25% 97%;
   --secondary-foreground: var(--noxias-ink);
-  --muted: 220 20% 97%;
+  --muted: 220 20% 98%;
   --muted-foreground: var(--noxias-muted);
   --accent: var(--noxias-accent);
   --accent-foreground: 0 0% 100%;
   --destructive: 0 70% 50%;
   --destructive-foreground: 0 0% 100%;
-  --border: 220 15% 90%;
-  --input: 220 15% 90%;
+  --border: 220 16% 92%;
+  --input: 220 16% 90%;
   --ring: var(--noxias-accent);
-  --radius: 0.5rem;
+  --radius: 0.875rem;
+  --shadow-soft: 0 1px 2px 0 hsl(var(--noxias-ink) / 0.04), 0 4px 16px -4px hsl(var(--noxias-ink) / 0.05);
+  --shadow-lift: 0 2px 4px 0 hsl(var(--noxias-ink) / 0.04), 0 12px 32px -8px hsl(var(--noxias-ink) / 0.10);
+  --shadow-accent: 0 8px 24px -8px hsl(var(--noxias-accent) / 0.30);
 }
 
 * { border-color: hsl(var(--border)); }
@@ -49,14 +52,42 @@ h1, h2, h3, .font-display { font-family: var(--font-sans), Ubuntu, system-ui, sa
 
 .noxias-grain {
   background-image:
-    radial-gradient(hsl(var(--noxias-accent) / 0.04) 1px, transparent 1px),
+    radial-gradient(hsl(var(--noxias-accent) / 0.05) 1px, transparent 1px),
     linear-gradient(180deg, hsl(var(--noxias-paper)) 0%, hsl(var(--noxias-paper)) 100%);
-  background-size: 28px 28px, 100% 100%;
+  background-size: 32px 32px, 100% 100%;
 }
 
 .noxias-hero-glow {
-  background: radial-gradient(60% 50% at 0% 0%, hsl(var(--noxias-accent) / 0.10) 0%, transparent 70%),
-              radial-gradient(40% 40% at 100% 0%, hsl(var(--noxias-deep) / 0.06) 0%, transparent 70%);
+  background:
+    radial-gradient(70% 60% at 0% 0%, hsl(var(--noxias-accent) / 0.14) 0%, transparent 70%),
+    radial-gradient(50% 50% at 100% 30%, hsl(var(--noxias-deep) / 0.10) 0%, transparent 65%),
+    radial-gradient(40% 30% at 80% 90%, hsl(var(--noxias-accent) / 0.08) 0%, transparent 65%);
+}
+
+/* Élévation Noxias — utilisable sur n'importe quelle Card */
+.shadow-noxias-soft { box-shadow: var(--shadow-soft); }
+.shadow-noxias-lift { box-shadow: var(--shadow-lift); }
+.shadow-noxias-accent { box-shadow: var(--shadow-accent); }
+
+/* Animation d'entrée page */
+@keyframes noxias-page-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.noxias-page-in { animation: noxias-page-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* Animation float pour les illustrations */
+@keyframes noxias-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.noxias-float { animation: noxias-float 4s ease-in-out infinite; }
+
+/* Anneau focus accent uniforme */
+*:focus-visible {
+  outline: 2px solid hsl(var(--noxias-accent) / 0.45);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 /* Subtle scrollbar */

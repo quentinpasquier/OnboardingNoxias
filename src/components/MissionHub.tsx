@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { MissionLoadingSkeleton } from "@/components/skeletons/MissionLoadingSkeleton";
+import { BonhommeError, BonhommeReady, BonhommePointing } from "@/components/illustrations/Bonhomme";
 
 export function MissionHub({ missionId }: { missionId: string }) {
   const { mission, update } = useMission(missionId);
@@ -20,9 +21,11 @@ export function MissionHub({ missionId }: { missionId: string }) {
   if (mission === undefined) return <MissionLoadingSkeleton />;
   if (mission === null) {
     return (
-      <main className="container py-12">
-        <p className="text-muted-foreground mb-4">Mission introuvable.</p>
-        <Link href="/"><Button variant="outline"><ArrowLeft /> Retour aux missions</Button></Link>
+      <main className="container max-w-md py-20 text-center noxias-page-in">
+        <BonhommeError size={140} className="mb-6" />
+        <h1 className="font-display text-2xl font-bold mb-2">Onboarding introuvable</h1>
+        <p className="text-muted-foreground mb-6">Ce dossier client a peut-être été supprimé, ou tu n'as plus accès.</p>
+        <Link href="/"><Button variant="accent"><ArrowLeft /> Retour aux onboardings</Button></Link>
       </main>
     );
   }
@@ -40,25 +43,27 @@ export function MissionHub({ missionId }: { missionId: string }) {
   }
 
   return (
-    <main className="container max-w-6xl py-10">
+    <main className="container max-w-6xl py-10 noxias-page-in">
       <div className="mb-10">
         <Link href="/" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-3">
           <ArrowLeft className="h-3.5 w-3.5" /> Tous les onboardings
         </Link>
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="font-display text-3xl font-bold tracking-tight">{mission.clientName}</h1>
-            <Badge variant={completed ? "success" : "accent"}>
-              {completed ? "Terminé" : "En cours"}
-            </Badge>
+          <div>
+            <div className="flex items-center gap-3 flex-wrap mb-1">
+              <h1 className="font-display text-4xl font-bold tracking-tight">{mission.clientName}</h1>
+              <Badge variant={completed ? "success" : "accent"} className="text-xs">
+                {completed ? "✓ Terminé" : "● En cours"}
+              </Badge>
+            </div>
+            {mission.clientWebsite && (
+              <a href={mission.clientWebsite} target="_blank" rel="noreferrer" className="text-sm text-muted-foreground hover:text-accent">{mission.clientWebsite}</a>
+            )}
           </div>
           <Button variant="outline" size="sm" onClick={toggleStatus}>
             {completed ? <><RotateCcw /> Rouvrir l'onboarding</> : <><Flag /> Marquer comme terminé</>}
           </Button>
         </div>
-        {mission.clientWebsite && (
-          <a href={mission.clientWebsite} target="_blank" rel="noreferrer" className="text-sm text-muted-foreground hover:text-accent mt-1 inline-block">{mission.clientWebsite}</a>
-        )}
       </div>
 
       <section className="mb-8">
@@ -89,58 +94,67 @@ export function MissionHub({ missionId }: { missionId: string }) {
       <h2 className="font-display text-xl font-medium mb-4">Ateliers</h2>
       <div className="grid md:grid-cols-2 gap-5">
         <Link href={`/missions/${mission.id}/matrice`} className="group">
-          <Card className="h-full hover:border-accent/50 hover:shadow-md transition-all">
-            <CardHeader>
+          <Card className="h-full overflow-hidden hover:border-accent/50 hover:shadow-noxias-lift hover:-translate-y-0.5 transition-all duration-200">
+            <div className="bg-gradient-to-br from-accent/8 via-accent/4 to-transparent border-b border-border/60 px-6 pt-5 pb-4">
               <div className="flex items-start justify-between gap-3">
-                <div className="rounded-lg bg-accent/10 p-2.5"><ListChecks className="h-6 w-6 text-accent" /></div>
-                <div className="flex flex-col items-end gap-1">
-                  <Badge variant={answered === MATRIX_QUESTIONS.length ? "accent" : "secondary"}>{answered}/{MATRIX_QUESTIONS.length}</Badge>
-                  {drafts > 0 && (
-                    <Badge variant="outline" className="border-amber-400 bg-amber-100 text-amber-900 text-[10px]">
-                      <FileEdit className="h-3 w-3 mr-1" /> {drafts} brouillon{drafts > 1 ? "s" : ""}
-                    </Badge>
-                  )}
+                <div className="flex items-center gap-3">
+                  <div className="rounded-2xl bg-card border border-border/70 p-2.5 shadow-noxias-soft"><ListChecks className="h-6 w-6 text-accent" /></div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-noxias-muted font-medium">Atelier 1</p>
+                    <p className="font-display text-lg font-bold leading-tight group-hover:text-accent transition-colors">Matrice de prospection</p>
+                  </div>
                 </div>
+                <BonhommePointing size={64} />
               </div>
-              <CardTitle className="text-lg mt-3 group-hover:text-accent transition-colors">Atelier 1 — Matrice de prospection</CardTitle>
-              <CardDescription>30 questions structurées sur cible, douleurs, valeur, canaux. Co-rempli avec le client.</CardDescription>
-            </CardHeader>
-            <CardContent>
+            </div>
+            <CardContent className="pt-5">
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">31 questions structurées sur cible, douleurs, valeur, canaux, cas clients. Co-remplies avec le client.</p>
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                <span>Progression</span>
+                <span className="font-medium text-foreground tabular-nums">{answered}/{MATRIX_QUESTIONS.length}</span>
+              </div>
               <Progress value={matrixPct} className="mb-4" />
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  {validated > 0 && <><CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> {validated} validée{validated > 1 ? "s" : ""}</>}
+              <div className="flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  {validated > 0 && <><CheckCircle2 className="h-3.5 w-3.5 text-accent" /> {validated} validée{validated > 1 ? "s" : ""}</>}
+                  {drafts > 0 && <span className="ml-1 inline-flex items-center gap-1 text-amber-700"><FileEdit className="h-3 w-3" /> {drafts} brouillon{drafts > 1 ? "s" : ""}</span>}
                   {answered === 0 && <><FileQuestion className="h-3.5 w-3.5" /> Aucune réponse</>}
                 </span>
-                <span className="text-foreground group-hover:text-accent transition-colors flex items-center gap-1">Ouvrir <ArrowRight className="h-3.5 w-3.5" /></span>
+                <span className="text-foreground group-hover:text-accent transition-colors flex items-center gap-1 font-medium">Ouvrir <ArrowRight className="h-3.5 w-3.5" /></span>
               </div>
             </CardContent>
           </Card>
         </Link>
 
-        <Link href={`/missions/${mission.id}/boite-a-outils`} className={`group ${!toolboxScopeReady ? "" : ""}`}>
-          <Card className="h-full hover:border-accent/50 hover:shadow-md transition-all">
-            <CardHeader>
+        <Link href={`/missions/${mission.id}/boite-a-outils`} className="group">
+          <Card className="h-full overflow-hidden hover:border-accent/50 hover:shadow-noxias-lift hover:-translate-y-0.5 transition-all duration-200">
+            <div className="bg-gradient-to-br from-noxias-deep/10 via-accent/4 to-transparent border-b border-border/60 px-6 pt-5 pb-4">
               <div className="flex items-start justify-between gap-3">
-                <div className="rounded-lg bg-accent/10 p-2.5"><Sparkles className="h-6 w-6 text-accent" /></div>
-                <Badge variant={toolboxReady ? "accent" : "secondary"}>{toolboxReady ? "Prête" : "À générer"}</Badge>
+                <div className="flex items-center gap-3">
+                  <div className="rounded-2xl bg-card border border-border/70 p-2.5 shadow-noxias-soft"><Sparkles className="h-6 w-6 text-accent" /></div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-noxias-muted font-medium">Atelier 2</p>
+                    <p className="font-display text-lg font-bold leading-tight group-hover:text-accent transition-colors">Boîte à outils du commercial</p>
+                  </div>
+                </div>
+                {toolboxReady ? <BonhommeReady size={64} /> : <BonhommePointing size={64} />}
               </div>
-              <CardTitle className="text-lg mt-3 group-hover:text-accent transition-colors">Atelier 2 — Boîte à outils du commercial</CardTitle>
-              <CardDescription>Positionnement, personas, argumentaires, pitch ramifié, 30 objections, matrice de qualification.</CardDescription>
-            </CardHeader>
-            <CardContent>
+            </div>
+            <CardContent className="pt-5">
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">Positionnement, personas, argumentaires, pitch ramifié, 30 objections, matrice de qualification.</p>
               {toolboxReady ? (
-                <div className="text-sm text-foreground">
-                  <p className="text-emerald-700 font-medium flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" /> Boîte à outils générée</p>
-                  <p className="text-xs text-muted-foreground mt-1">{mission.toolbox?.personas.length} persona{(mission.toolbox?.personas.length ?? 0) > 1 ? "s" : ""} · {mission.toolbox?.objections.length ?? 0} objections · pitch en {mission.toolbox?.pitch.length ?? 0} sections</p>
+                <div className="text-sm">
+                  <p className="text-noxias-deep font-medium flex items-center gap-1.5 mb-1"><CheckCircle2 className="h-4 w-4 text-accent" /> Boîte à outils générée</p>
+                  <p className="text-xs text-muted-foreground">{mission.toolbox?.personas.length} persona{(mission.toolbox?.personas.length ?? 0) > 1 ? "s" : ""} · {mission.toolbox?.objections.length ?? 0} objections · pitch en {mission.toolbox?.pitch.length ?? 0} sections</p>
                 </div>
               ) : !toolboxScopeReady ? (
-                <p className="text-xs text-muted-foreground">Remplis d'abord la matrice à au moins 60% pour une boîte cohérente.</p>
+                <p className="text-xs text-muted-foreground">Remplis d'abord la matrice à au moins 60 % pour une boîte cohérente ({Math.round((answered / MATRIX_QUESTIONS.length) * 100)} % pour l'instant).</p>
               ) : (
                 <p className="text-xs text-muted-foreground">Prête à être générée à partir de ta matrice.</p>
               )}
-              <div className="flex items-center justify-end text-xs text-muted-foreground mt-4">
-                <span className="text-foreground group-hover:text-accent transition-colors flex items-center gap-1">Ouvrir <ArrowRight className="h-3.5 w-3.5" /></span>
+              <div className="flex items-center justify-between text-xs text-muted-foreground mt-4">
+                <Badge variant={toolboxReady ? "accent" : "secondary"} className="text-[10px]">{toolboxReady ? "✓ Prête" : "À générer"}</Badge>
+                <span className="text-foreground group-hover:text-accent transition-colors flex items-center gap-1 font-medium">Ouvrir <ArrowRight className="h-3.5 w-3.5" /></span>
               </div>
             </CardContent>
           </Card>

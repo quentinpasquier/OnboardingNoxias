@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BonhommeError } from "@/components/illustrations/Bonhomme";
 
 export function AtelierShell({
   missionId,
@@ -22,16 +23,16 @@ export function AtelierShell({
   children: React.ReactNode;
 }) {
   return (
-    <main className="container max-w-7xl py-10">
-      <div className="mb-8">
+    <main className="container max-w-7xl py-10 noxias-page-in">
+      <div className="mb-10">
         <Link href={`/missions/${missionId}`} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-3">
-          <ArrowLeft className="h-3.5 w-3.5" /> Mission · {clientName}
+          <ArrowLeft className="h-3.5 w-3.5" /> Onboarding · {clientName}
         </Link>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-accent font-medium mb-2">{atelierLabel}</p>
-            <h1 className="font-display text-3xl font-bold tracking-tight">{atelierTitle}</h1>
-            {atelierDescription && <p className="text-muted-foreground mt-1.5 max-w-2xl">{atelierDescription}</p>}
+            <p className="text-xs uppercase tracking-[0.22em] text-accent font-medium mb-2">{atelierLabel}</p>
+            <h1 className="font-display text-4xl font-bold tracking-tight">{atelierTitle}</h1>
+            {atelierDescription && <p className="text-muted-foreground mt-2 max-w-2xl text-base leading-relaxed">{atelierDescription}</p>}
           </div>
           {rightBadge}
         </div>
@@ -72,9 +73,11 @@ export function AtelierLoading() {
 
 export function AtelierNotFound() {
   return (
-    <main className="container py-12">
-      <p className="text-muted-foreground mb-4">Mission introuvable.</p>
-      <Link href="/"><Button variant="outline"><ArrowLeft /> Retour aux missions</Button></Link>
+    <main className="container max-w-md py-20 text-center noxias-page-in">
+      <BonhommeError size={140} className="mb-6" />
+      <h1 className="font-display text-2xl font-bold mb-2">Onboarding introuvable</h1>
+      <p className="text-muted-foreground mb-6">Ce dossier client n'existe plus, ou tu n'as plus accès.</p>
+      <Link href="/"><Button variant="accent"><ArrowLeft /> Retour aux onboardings</Button></Link>
     </main>
   );
 }

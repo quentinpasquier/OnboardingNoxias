@@ -17,7 +17,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Job manquant" }, { status: 400 });
     }
 
-    const { schema, userPrompt, expert, maxTokens, effort } = getJobPrompt(job);
+    const { schema, userPrompt, expert, maxTokens, effort, thinking } = getJobPrompt(job);
     const context = buildMissionContext(mission, { includeMatrix: true });
 
     // Si agent expert : on injecte l'addendum dans le system prompt avant
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     const stream = anthropic.messages.stream({
       model: MODEL,
       max_tokens: maxTokens,
-      thinking: { type: "adaptive" },
+      thinking: { type: thinking },
       output_config: {
         effort,
         format: { type: "json_schema", schema },

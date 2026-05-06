@@ -14,8 +14,8 @@ export function AtelierContexte({ missionId }: { missionId: string }) {
       missionId={mission.id}
       clientName={mission.clientName}
       atelierLabel="Préparation"
-      atelierTitle="Contexte client"
-      atelierDescription="Documents, site web, notes, sources sur lesquelles l'IA s'appuie pour proposer des réponses cohérentes dans les deux ateliers."
+      atelierTitle="Bibliothèque & contexte client"
+      atelierDescription="Documents, site web, notes. Toutes les sources transmises par le client sont consultables ici, et servent à l'IA dans les deux ateliers."
     >
       <ContextPanel mission={mission} update={update} />
     </AtelierShell>

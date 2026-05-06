@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Upload, Globe, FileText, Trash2, Loader2, StickyNote } from "lucide-react";
+import { Upload, Globe, FileText, Trash2, Loader2, StickyNote, Eye, BookOpen } from "lucide-react";
 import type { Mission, MissionFile } from "@/types/mission";
 import type { MissionUpdater } from "@/hooks/use-mission";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { formatDate } from "@/lib/utils";
 
 export function ContextPanel({ mission, update }: { mission: Mission; update: (u: MissionUpdater) => void }) {
@@ -18,6 +19,7 @@ export function ContextPanel({ mission, update }: { mission: Mission; update: (u
   const [pasteText, setPasteText] = useState("");
   const [scrapeUrl, setScrapeUrl] = useState(mission.clientWebsite ?? "");
   const [notes, setNotes] = useState(mission.notes ?? "");
+  const [viewing, setViewing] = useState<MissionFile | null>(null);
 
   function addFile(name: string, excerpt: string) {
     const f: MissionFile = { id: crypto.randomUUID(), name, excerpt, addedAt: new Date().toISOString() };
@@ -133,33 +135,66 @@ export function ContextPanel({ mission, update }: { mission: Mission; update: (u
 
       <Card className="h-fit sticky top-20">
         <CardHeader>
-          <CardTitle className="text-base">Sources ({mission.files.length})</CardTitle>
-          <CardDescription>Utilisées comme contexte par l'IA</CardDescription>
+          <CardTitle className="text-base flex items-center gap-2"><BookOpen className="h-4 w-4 text-accent" /> Bibliothèque du client ({mission.files.length})</CardTitle>
+          <CardDescription>Documents transmis par le client. Cliquer pour consulter le contenu.</CardDescription>
         </CardHeader>
         <CardContent>
           {mission.files.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucune source pour l'instant.</p>
+            <p className="text-sm text-muted-foreground">Aucun document pour l'instant.</p>
           ) : (
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               {mission.files.map((f) => (
-                <li key={f.id} className="flex items-start gap-2 group">
-                  <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{f.name}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="secondary">{Math.round(f.excerpt.length / 1000)} k chars</Badge>
-                      <span className="text-xs text-muted-foreground">{formatDate(f.addedAt)}</span>
+                <li key={f.id} className="group rounded-md border border-border/60 hover:border-accent/40 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setViewing(f)}
+                    className="w-full text-left flex items-start gap-2 p-2.5 hover:bg-accent/5 rounded-md transition-colors"
+                  >
+                    <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5 group-hover:text-accent transition-colors" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate group-hover:text-accent transition-colors">{f.name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="secondary">{Math.round(f.excerpt.length / 1000)} k caractères</Badge>
+                        <span className="text-xs text-muted-foreground">{formatDate(f.addedAt)}</span>
+                      </div>
                     </div>
-                  </div>
-                  <button onClick={() => removeFile(f.id)} className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive">
-                    <Trash2 className="h-4 w-4" />
+                    <Eye className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
                   </button>
+                  <div className="px-2 pb-2 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); removeFile(f.id); }}
+                      className="text-xs text-muted-foreground hover:text-destructive inline-flex items-center gap-1"
+                      aria-label="Retirer le document"
+                    >
+                      <Trash2 className="h-3 w-3" /> Retirer
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={viewing !== null} onOpenChange={(v) => { if (!v) setViewing(null); }}>
+        <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 truncate"><FileText className="h-5 w-5 text-accent shrink-0" /> {viewing?.name}</DialogTitle>
+            <DialogDescription className="flex items-center gap-3 text-xs">
+              <span><Badge variant="secondary">{viewing ? Math.round(viewing.excerpt.length / 1000) : 0} k caractères</Badge></span>
+              <span>Ajouté {viewing ? formatDate(viewing.addedAt) : ""}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto rounded-md border bg-card/50 p-4 text-sm leading-relaxed whitespace-pre-wrap font-mono">
+            {viewing?.excerpt || "(contenu vide)"}
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <DialogClose asChild>
+              <Button variant="ghost">Fermer</Button>
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

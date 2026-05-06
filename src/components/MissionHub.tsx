@@ -1,8 +1,9 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, FileText, ListChecks, Sparkles, Layers, CheckCircle2, FileEdit, FileQuestion, RotateCcw, Flag } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, ListChecks, Sparkles, Layers, CheckCircle2, FileEdit, FileQuestion, RotateCcw, Flag, Pencil, Check, X } from "lucide-react";
 import { useMission } from "@/hooks/use-mission";
+import { Input } from "@/components/ui/input";
 import { MATRIX_QUESTIONS } from "@/lib/matrix-questions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +43,12 @@ export function MissionHub({ missionId }: { missionId: string }) {
     update((prev) => ({ ...prev, status: prev.status === "completed" ? "in_progress" : "completed" }));
   }
 
+  function renameClient(next: string) {
+    const trimmed = next.trim();
+    if (!trimmed || trimmed === mission!.clientName) return;
+    update((prev) => ({ ...prev, clientName: trimmed }));
+  }
+
   return (
     <main className="container max-w-6xl py-10 noxias-page-in">
       <div className="mb-10">
@@ -51,7 +58,7 @@ export function MissionHub({ missionId }: { missionId: string }) {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 flex-wrap mb-1">
-              <h1 className="font-display text-4xl font-bold tracking-tight">{mission.clientName}</h1>
+              <ClientNameEditor value={mission.clientName} onSave={renameClient} />
               <Badge variant={completed ? "success" : "accent"} className="text-xs">
                 {completed ? "✓ Terminé" : "● En cours"}
               </Badge>
@@ -161,5 +168,56 @@ export function MissionHub({ missionId }: { missionId: string }) {
         </Link>
       </div>
     </main>
+  );
+}
+
+function ClientNameEditor({ value, onSave }: { value: string; onSave: (next: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  function start() {
+    setDraft(value);
+    setEditing(true);
+  }
+
+  function commit() {
+    onSave(draft);
+    setEditing(false);
+  }
+
+  function cancel() {
+    setDraft(value);
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-2">
+        <Input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") cancel();
+          }}
+          className="font-display text-3xl font-bold tracking-tight h-auto py-1 max-w-md"
+        />
+        <Button onClick={commit} variant="accent" size="sm" aria-label="Valider"><Check /></Button>
+        <Button onClick={cancel} variant="ghost" size="sm" aria-label="Annuler"><X /></Button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={start}
+      className="group inline-flex items-baseline gap-2 hover:text-accent transition-colors text-left"
+      title="Renommer le client"
+    >
+      <h1 className="font-display text-4xl font-bold tracking-tight">{value}</h1>
+      <Pencil className="h-4 w-4 text-muted-foreground group-hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity self-center" />
+    </button>
   );
 }

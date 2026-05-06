@@ -41,7 +41,7 @@ export function Dashboard() {
       setClientName("");
       setWebsite("");
       setOpen(false);
-      window.location.href = `/missions/${saved.id}`;
+      window.location.href = `/missions/${saved.id}/contexte`;
     } catch (err) {
       alert(err instanceof Error ? err.message : "Erreur création");
     } finally {

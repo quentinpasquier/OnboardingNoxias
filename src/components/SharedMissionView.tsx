@@ -2,8 +2,8 @@
 import { useEffect, useState } from "react";
 import {
   Loader2, FileText, Send, CheckCircle2, MessageSquareQuote, Eye, Lock, ListChecks, Sparkles,
-  Target, Users, Phone, Shield, Layers, Globe, ChevronDown, ChevronUp, Download, Upload,
-  Trash2, FileSpreadsheet, FileType, Printer, Plus,
+  Target, Users, Phone, Shield, Layers, Globe, ChevronDown, ChevronUp, Download,
+  FileSpreadsheet, FileType, Printer,
 } from "lucide-react";
 import { sharedMissionsStore } from "@/lib/supabase/missions-store";
 import type { Mission, MissionFile } from "@/types/mission";
@@ -12,10 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
-import { ConfirmButton } from "@/components/ui/confirm-button";
 import { NoxiasLogo } from "@/components/branding/Logo";
 import { formatDate } from "@/lib/utils";
 import { matrixToCsv, downloadCsv } from "@/lib/share-csv";
@@ -100,7 +97,7 @@ export function SharedMissionView({ token }: { token: string }) {
           </p>
         </section>
 
-        <LibraryModule mission={mission} token={token} onChange={reload} />
+        <LibraryModule mission={mission} />
 
         <MatrixModule mission={mission} token={token} />
 
@@ -177,139 +174,43 @@ function CollapsibleModule({
 }
 
 // ============================================================================
-// Module bibliothèque (avec upload / suppression)
+// Module bibliothèque (consultation seule, lecture-seule)
 // ============================================================================
-function LibraryModule({ mission, token, onChange }: { mission: Mission; token: string; onChange: () => Promise<void> }) {
-  const [busy, setBusy] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [pasteName, setPasteName] = useState("");
-  const [pasteText, setPasteText] = useState("");
+function LibraryModule({ mission }: { mission: Mission }) {
   const [viewing, setViewing] = useState<MissionFile | null>(null);
-
-  async function onPdfUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    setError(null);
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setBusy("pdf");
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch("/api/extract-pdf", { method: "POST", body: form });
-      if (!res.ok) throw new Error(`Erreur d'extraction (${res.status})`);
-      const { text } = await res.json();
-      await sharedMissionsStore.addFile(token, file.name, text || "(PDF vide)");
-      await onChange();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur");
-    } finally {
-      setBusy(null);
-      e.target.value = "";
-    }
-  }
-
-  async function onPaste(e: React.FormEvent) {
-    e.preventDefault();
-    if (!pasteName.trim() || !pasteText.trim()) return;
-    setBusy("paste");
-    setError(null);
-    try {
-      await sharedMissionsStore.addFile(token, pasteName.trim(), pasteText.trim());
-      setPasteName("");
-      setPasteText("");
-      await onChange();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function deleteFile(id: string) {
-    setBusy("delete");
-    try {
-      await sharedMissionsStore.removeFile(token, id);
-      await onChange();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur");
-    } finally {
-      setBusy(null);
-    }
-  }
 
   return (
     <CollapsibleModule
       icon={<FileText className="h-6 w-6" />}
       title="Bibliothèque de documents"
-      subtitle={`${mission.files.length} document${mission.files.length > 1 ? "s" : ""} · documents partagés avec Noxias pour cadrer la mission`}
+      subtitle={`${mission.files.length} document${mission.files.length > 1 ? "s" : ""} · documents transmis à Noxias pour cadrer la mission`}
       defaultOpen={false}
     >
-      <div className="grid lg:grid-cols-[1fr_1.2fr] gap-6">
-        <div className="space-y-4">
-          <p className="text-sm font-medium text-noxias-deep">Ajouter un document</p>
-          <Label className="border border-dashed border-border rounded-lg p-4 flex flex-col items-center gap-2 cursor-pointer hover:bg-secondary/50 transition-colors">
-            {busy === "pdf" ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5 text-accent" />}
-            <span className="text-sm font-medium">Importer un PDF</span>
-            <span className="text-xs text-muted-foreground text-center">Brief, audit, plaquette, présentation…</span>
-            <input type="file" accept="application/pdf" className="sr-only" onChange={onPdfUpload} disabled={busy === "pdf"} />
-          </Label>
-
-          <form onSubmit={onPaste} className="space-y-2 border border-dashed border-border rounded-lg p-4">
-            <p className="text-sm font-medium">Coller du texte</p>
-            <Input placeholder="Titre du document" value={pasteName} onChange={(e) => setPasteName(e.target.value)} disabled={busy === "paste"} />
-            <Textarea placeholder="Contenu (transcription, mail, brief…)" rows={4} value={pasteText} onChange={(e) => setPasteText(e.target.value)} disabled={busy === "paste"} />
-            <Button type="submit" variant="outline" size="sm" disabled={busy === "paste" || !pasteName.trim() || !pasteText.trim()}>
-              {busy === "paste" ? <Loader2 className="animate-spin" /> : <Plus />} Ajouter
-            </Button>
-          </form>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </div>
-
-        <div>
-          <p className="text-sm font-medium text-noxias-deep mb-3">Documents partagés ({mission.files.length})</p>
-          {mission.files.length === 0 ? (
-            <p className="text-sm text-muted-foreground italic">Aucun document pour l'instant. Ajoutez-en à gauche pour enrichir le contexte de la mission.</p>
-          ) : (
-            <ul className="space-y-2">
-              {mission.files.map((f) => {
-                const fromClient = f.addedBy === "client";
-                return (
-                  <li key={f.id} className="rounded-md border border-border/60 hover:border-accent/40 transition-colors">
-                    <div className="flex items-start gap-2 p-2.5">
-                      <button
-                        type="button"
-                        onClick={() => setViewing(f)}
-                        className="flex items-start gap-2 flex-1 min-w-0 text-left group hover:text-accent transition-colors"
-                      >
-                        <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5 group-hover:text-accent transition-colors" />
-                        <span className="flex-1 min-w-0">
-                          <span className="block text-sm font-medium truncate">{f.name}</span>
-                          <span className="flex items-center gap-2 mt-1">
-                            <Badge variant="secondary" className="text-[10px]">{Math.round(f.excerpt.length / 1000)} k caractères</Badge>
-                            <span className="text-xs text-muted-foreground">{formatDate(f.addedAt)}</span>
-                            {fromClient && <Badge variant="outline" className="text-[10px]">Ajouté par vous</Badge>}
-                          </span>
-                        </span>
-                      </button>
-                      {fromClient && (
-                        <ConfirmButton
-                          onConfirm={() => deleteFile(f.id)}
-                          question="Retirer ?"
-                          confirmLabel="Retirer"
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </ConfirmButton>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-      </div>
+      {mission.files.length === 0 ? (
+        <p className="text-sm text-muted-foreground italic">Aucun document pour l'instant.</p>
+      ) : (
+        <ul className="space-y-2">
+          {mission.files.map((f) => (
+            <li key={f.id} className="rounded-md border border-border/60 hover:border-accent/40 transition-colors">
+              <button
+                type="button"
+                onClick={() => setViewing(f)}
+                className="w-full flex items-start gap-2 p-3 text-left group hover:bg-accent/5 transition-colors rounded-md"
+              >
+                <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5 group-hover:text-accent transition-colors" />
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-medium truncate group-hover:text-accent transition-colors">{f.name}</span>
+                  <span className="flex items-center gap-2 mt-1">
+                    <Badge variant="secondary" className="text-[10px]">{Math.round(f.excerpt.length / 1000)} k caractères</Badge>
+                    <span className="text-xs text-muted-foreground">{formatDate(f.addedAt)}</span>
+                  </span>
+                </span>
+                <Eye className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <Dialog open={viewing !== null} onOpenChange={(v) => { if (!v) setViewing(null); }}>
         <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">

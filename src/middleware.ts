@@ -10,6 +10,7 @@ function isPublicPath(pathname: string) {
   if (pathname.startsWith("/_next/")) return true;
   if (pathname.startsWith("/favicon")) return true;
   if (pathname.startsWith("/brand/")) return true;
+  if (pathname.startsWith("/share/")) return true;
   return false;
 }
 

@@ -1,15 +1,18 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, FileText, ListChecks, Sparkles, Layers, CheckCircle2, FileEdit, FileQuestion, RotateCcw, Flag, Pencil, Check, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileText, ListChecks, Sparkles, Layers, CheckCircle2, FileEdit, FileQuestion, RotateCcw, Flag, Pencil, Check, X, Share2, Copy, Loader2, MessageSquareQuote } from "lucide-react";
 import { useMission } from "@/hooks/use-mission";
+import { missionsStore } from "@/lib/supabase/missions-store";
 import { Input } from "@/components/ui/input";
 import { MATRIX_QUESTIONS } from "@/lib/matrix-questions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { MissionLoadingSkeleton } from "@/components/skeletons/MissionLoadingSkeleton";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { BonhommeError, BonhommeReady, BonhommePointing } from "@/components/illustrations/Bonhomme";
 
 export function MissionHub({ missionId }: { missionId: string }) {
@@ -67,11 +70,28 @@ export function MissionHub({ missionId }: { missionId: string }) {
               <a href={mission.clientWebsite} target="_blank" rel="noreferrer" className="text-sm text-muted-foreground hover:text-accent">{mission.clientWebsite}</a>
             )}
           </div>
-          <Button variant="outline" size="sm" onClick={toggleStatus}>
-            {completed ? <><RotateCcw /> Rouvrir l'onboarding</> : <><Flag /> Marquer comme terminé</>}
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <ShareButton mission={mission} update={update} />
+            <Button variant="outline" size="sm" onClick={toggleStatus}>
+              {completed ? <><RotateCcw /> Rouvrir l'onboarding</> : <><Flag /> Marquer comme terminé</>}
+            </Button>
+          </div>
         </div>
       </div>
+
+      {mission.recommendations?.trim() && (
+        <Card className="mb-8 border-accent/30 bg-accent/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <MessageSquareQuote className="h-4 w-4 text-accent" /> Recommandations du client
+            </CardTitle>
+            <CardDescription>Reçues via le lien de partage. Mises à jour à chaque envoi du client.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm whitespace-pre-wrap leading-relaxed">{mission.recommendations}</p>
+          </CardContent>
+        </Card>
+      )}
 
       <section className="mb-8">
         <Card>
@@ -219,5 +239,126 @@ function ClientNameEditor({ value, onSave }: { value: string; onSave: (next: str
       <h1 className="font-display text-4xl font-bold tracking-tight">{value}</h1>
       <Pencil className="h-4 w-4 text-muted-foreground group-hover:text-accent opacity-0 group-hover:opacity-100 transition-opacity self-center" />
     </button>
+  );
+}
+
+function ShareButton({
+  mission,
+  update,
+}: {
+  mission: NonNullable<ReturnType<typeof useMission>["mission"]>;
+  update: ReturnType<typeof useMission>["update"];
+}) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const shareUrl = mission.shareToken ? `${baseUrl}/share/${mission.shareToken}` : null;
+
+  async function enable() {
+    setBusy(true);
+    setError(null);
+    try {
+      const token = await missionsStore.enableShare(mission.id);
+      update((prev) => ({ ...prev, shareToken: token }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function disable() {
+    setBusy(true);
+    setError(null);
+    try {
+      await missionsStore.disableShare(mission.id);
+      update((prev) => ({ ...prev, shareToken: undefined }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function copy() {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // ignore
+    }
+  }
+
+  return (
+    <>
+      <Button
+        variant={mission.shareToken ? "accent" : "outline"}
+        size="sm"
+        onClick={() => setOpen(true)}
+      >
+        <Share2 /> {mission.shareToken ? "Partage actif" : "Partager au client"}
+      </Button>
+      <Dialog open={open} onOpenChange={(v) => { if (!busy) setOpen(v); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Share2 className="h-5 w-5 text-accent" /> Lien de partage client</DialogTitle>
+            <DialogDescription>
+              Génère un lien public en lecture seule à transmettre au client. Il pourra consulter toutes les informations de cet onboarding et te laisser ses recommandations directement.
+            </DialogDescription>
+          </DialogHeader>
+
+          {!mission.shareToken ? (
+            <div className="space-y-3">
+              <div className="rounded-md border border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
+                Aucun lien actif. Le client n'a accès à rien tant que tu n'as pas activé le partage.
+              </div>
+              <Button onClick={enable} variant="accent" disabled={busy}>
+                {busy ? <><Loader2 className="animate-spin" /> Génération…</> : <><Share2 /> Activer le partage</>}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Lien à transmettre au client</p>
+                <div className="flex gap-2">
+                  <Input value={shareUrl ?? ""} readOnly className="font-mono text-xs" onFocus={(e) => e.currentTarget.select()} />
+                  <Button onClick={copy} variant="outline" size="default">
+                    {copied ? <><Check /> Copié</> : <><Copy /> Copier</>}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">N'importe qui avec ce lien peut consulter l'onboarding et déposer des recommandations. Aucune connexion requise.</p>
+              </div>
+
+              <div className="border-t pt-3">
+                <ConfirmButton
+                  onConfirm={disable}
+                  question="Désactiver le partage ?"
+                  confirmLabel="Désactiver"
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <X /> Désactiver le lien
+                </ConfirmButton>
+                <p className="text-xs text-muted-foreground mt-1">Coupe l'accès. Le lien actuel ne fonctionnera plus.</p>
+              </div>
+            </div>
+          )}
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+
+          <div className="flex justify-end">
+            <DialogClose asChild>
+              <Button variant="ghost">Fermer</Button>
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

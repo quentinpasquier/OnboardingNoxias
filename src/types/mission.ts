@@ -22,6 +22,8 @@ export type Mission = {
   matrixStatus?: MatrixStatus;
   toolbox: Toolbox | null;
   status?: MissionStatus;
+  shareToken?: string;
+  recommendations?: string;
   createdAt: string;
   updatedAt: string;
 };

@@ -13,12 +13,14 @@ type Row = {
   matrix_status: MatrixStatus;
   toolbox: Toolbox | null;
   status: MissionStatus | null;
+  share_token: string | null;
+  recommendations: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
 };
 
-function rowToMission(r: Row): Mission {
+export function rowToMission(r: Row): Mission {
   return {
     id: r.id,
     clientName: r.client_name,
@@ -29,6 +31,8 @@ function rowToMission(r: Row): Mission {
     matrixStatus: r.matrix_status ?? {},
     toolbox: r.toolbox,
     status: r.status ?? "in_progress",
+    shareToken: r.share_token ?? undefined,
+    recommendations: r.recommendations ?? undefined,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -45,6 +49,8 @@ function missionToRow(m: Mission, userId?: string): Partial<Row> {
     matrix_status: m.matrixStatus ?? {},
     toolbox: m.toolbox,
     status: m.status ?? "in_progress",
+    share_token: m.shareToken ?? null,
+    recommendations: m.recommendations ?? null,
     ...(userId ? { created_by: userId } : {}),
   };
 }
@@ -85,6 +91,38 @@ export const missionsStore = {
   async remove(id: string): Promise<void> {
     const sb = getSupabaseBrowserClient();
     const { error } = await sb.from("missions").delete().eq("id", id);
+    if (error) throw error;
+  },
+
+  async enableShare(id: string): Promise<string> {
+    const sb = getSupabaseBrowserClient();
+    const token = crypto.randomUUID();
+    const { error } = await sb.from("missions").update({ share_token: token }).eq("id", id);
+    if (error) throw error;
+    return token;
+  },
+
+  async disableShare(id: string): Promise<void> {
+    const sb = getSupabaseBrowserClient();
+    const { error } = await sb.from("missions").update({ share_token: null }).eq("id", id);
+    if (error) throw error;
+  },
+};
+
+export const sharedMissionsStore = {
+  async get(token: string): Promise<Mission | null> {
+    const sb = getSupabaseBrowserClient();
+    const { data, error } = await sb.rpc("get_shared_mission", { p_token: token }).maybeSingle();
+    if (error) throw error;
+    return data ? rowToMission(data as Row) : null;
+  },
+
+  async submitRecommendations(token: string, recommendations: string): Promise<void> {
+    const sb = getSupabaseBrowserClient();
+    const { error } = await sb.rpc("submit_shared_recommendations", {
+      p_token: token,
+      p_recommendations: recommendations,
+    });
     if (error) throw error;
   },
 };

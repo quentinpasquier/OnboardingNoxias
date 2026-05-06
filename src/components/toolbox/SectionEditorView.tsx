@@ -39,6 +39,8 @@ import {
   ObjectionsListEditor,
   QualificationEditor,
 } from "@/components/toolbox/editors";
+import { ValidationToggle } from "@/components/toolbox/ValidationToggle";
+import { ValidationKey } from "@/lib/validation-keys";
 
 export function SectionEditorView({ missionId, sectionKey }: { missionId: string; sectionKey: SectionKey }) {
   const { mission, update } = useMission(missionId);
@@ -78,6 +80,18 @@ export function SectionEditorView({ missionId, sectionKey }: { missionId: string
             )}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            {anyJobDone && sectionKey !== "personas" && sectionKey !== "pitch" && sectionKey !== "objections" && (
+              <ValidationToggle
+                mission={mission}
+                update={update}
+                validationKey={
+                  sectionKey === "positioning" ? ValidationKey.positioning() :
+                  sectionKey === "arguments" ? ValidationKey.arguments_() :
+                  ValidationKey.qualification()
+                }
+                label="Valider cette section"
+              />
+            )}
             {anyJobDone && (
               <ConfirmButton
                 onConfirm={() => update((prev) => ({ ...prev, toolbox: clearSectionInToolbox(prev.toolbox, sectionKey) }))}
@@ -154,7 +168,20 @@ function SectionContent({
       return <PositioningEditor value={tb.positioning} onChange={(v) => patch({ positioning: v })} />;
 
     case "personas":
-      return <PersonasEditor value={tb.personas} onChange={(v) => patch({ personas: v })} />;
+      return (
+        <PersonasEditor
+          value={tb.personas}
+          onChange={(v) => patch({ personas: v })}
+          validationSlot={(i) => (
+            <ValidationToggle
+              mission={mission}
+              update={update}
+              validationKey={ValidationKey.persona(i)}
+              label="Valider"
+            />
+          )}
+        />
+      );
 
     case "arguments":
       return (
@@ -228,6 +255,13 @@ function PitchPerSubsection({
                   {hasContent && <span className="text-xs text-muted-foreground">· {section!.scripts.length} script{section!.scripts.length > 1 ? "s" : ""}</span>}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
+                  {hasContent && (
+                    <ValidationToggle
+                      mission={mission}
+                      update={update}
+                      validationKey={ValidationKey.pitch(id)}
+                    />
+                  )}
                   {hasContent && (
                     <ConfirmButton
                       onConfirm={() => update((prev) => ({ ...prev, toolbox: clearJobInToolbox(prev.toolbox, job) }))}
@@ -363,6 +397,13 @@ function ObjectionsPerCategory({
                   <span className="text-xs text-muted-foreground">· {items.length} / 6 objections</span>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
+                  {items.length > 0 && (
+                    <ValidationToggle
+                      mission={mission}
+                      update={update}
+                      validationKey={ValidationKey.objection(code)}
+                    />
+                  )}
                   {items.length > 0 && (
                     <ConfirmButton
                       onConfirm={() => update((prev) => ({ ...prev, toolbox: clearJobInToolbox(prev.toolbox, job) }))}

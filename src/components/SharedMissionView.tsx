@@ -23,6 +23,8 @@ import { CommentsProvider, useComments } from "@/components/share/CommentsContex
 import { CommentsDrawer } from "@/components/share/CommentsDrawer";
 import { CommentTrigger } from "@/components/share/CommentTrigger";
 import { PITCH_SECTION_LABELS, OBJECTION_CATEGORY_LABELS } from "@/lib/toolbox-sections";
+import { ValidationBadge } from "@/components/toolbox/ValidationToggle";
+import { ValidationKey, isValidated } from "@/lib/validation-keys";
 
 const OBJ_CATS: Record<string, string> = {
   A: "Prestataires actuels / interne",
@@ -361,22 +363,31 @@ function MatrixModule({ mission, token }: { mission: Mission; token: string }) {
               <div key={g.label}>
                 <h3 className="text-xs uppercase tracking-[0.18em] text-accent font-bold mb-3">{g.label}</h3>
                 <div className="space-y-3">
-                  {groupAnswers.map((q) => (
-                    <Card key={q.id}>
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between gap-3 flex-wrap">
-                          <div className="flex items-start gap-2 flex-wrap min-w-0">
-                            <Badge variant="secondary">#{q.id}</Badge>
-                            <CardTitle className="text-base">{q.question}</CardTitle>
+                  {groupAnswers.map((q) => {
+                    const status = mission.matrixStatus?.[q.id];
+                    return (
+                      <Card key={q.id}>
+                        <CardHeader className="pb-2">
+                          <div className="flex items-start justify-between gap-3 flex-wrap">
+                            <div className="flex items-start gap-2 flex-wrap min-w-0">
+                              <Badge variant="secondary">#{q.id}</Badge>
+                              <CardTitle className="text-base">{q.question}</CardTitle>
+                              {status === "validated" && <ValidationBadge validated />}
+                              {status === "draft" && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider rounded-full px-2 py-0.5 bg-amber-100 text-amber-800">
+                                  Brouillon en cours
+                                </span>
+                              )}
+                            </div>
+                            <CommentTrigger anchorType="matrix" anchorId={String(q.id)} anchorLabel={`Matrice #${q.id} · ${q.question}`} />
                           </div>
-                          <CommentTrigger anchorType="matrix" anchorId={String(q.id)} anchorLabel={`Matrice #${q.id} · ${q.question}`} />
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <ProseRender text={mission.matrix[q.id]} />
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardHeader>
+                        <CardContent>
+                          <ProseRender text={mission.matrix[q.id]} />
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -414,12 +425,12 @@ function ToolboxModule({ mission, token }: { mission: Mission; token: string }) 
       actions={<ExportToolbar onPdf={exportPdf} onDocx={() => exportSharedDocx(token, "toolbox", mission.clientName)} />}
     >
       <div className="space-y-10">
-        {tb.positioning?.intro && <PositioningBlock tb={tb} />}
-        {tb.personas.length > 0 && <PersonasBlock tb={tb} />}
-        {(tb.killerArguments.length > 0 || tb.disqualified) && <ArgumentsBlock tb={tb} />}
-        {tb.pitch.length > 0 && <PitchBlock tb={tb} />}
-        {tb.objections.length > 0 && <ObjectionsBlock tb={tb} />}
-        {tb.qualification?.criteria?.length > 0 && <QualificationBlock tb={tb} />}
+        {tb.positioning?.intro && <PositioningBlock tb={tb} mission={mission} />}
+        {tb.personas.length > 0 && <PersonasBlock tb={tb} mission={mission} />}
+        {(tb.killerArguments.length > 0 || tb.disqualified) && <ArgumentsBlock tb={tb} mission={mission} />}
+        {tb.pitch.length > 0 && <PitchBlock tb={tb} mission={mission} />}
+        {tb.objections.length > 0 && <ObjectionsBlock tb={tb} mission={mission} />}
+        {tb.qualification?.criteria?.length > 0 && <QualificationBlock tb={tb} mission={mission} />}
       </div>
     </CollapsibleModule>
   );
@@ -466,12 +477,15 @@ async function exportSharedDocx(token: string, scope: "matrix" | "toolbox" | "bo
 // ============================================================================
 // Sous-blocs de la boîte à outils
 // ============================================================================
-function PositioningBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
+function PositioningBlock({ tb, mission }: { tb: NonNullable<Mission["toolbox"]>; mission: Mission }) {
   return (
     <div>
-      <div className="flex items-center justify-between gap-3 mb-3">
+      <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <h3 className="font-display text-xl font-bold flex items-center gap-2"><Target className="h-5 w-5 text-accent" /> Positionnement</h3>
-        <CommentTrigger anchorType="positioning" anchorId={null} anchorLabel="Positionnement" />
+        <div className="flex items-center gap-2">
+          <ValidationBadge validated={isValidated(mission.validations, ValidationKey.positioning())} />
+          <CommentTrigger anchorType="positioning" anchorId={null} anchorLabel="Positionnement" />
+        </div>
       </div>
       <Card>
         <CardContent className="py-6 space-y-5">
@@ -527,7 +541,7 @@ function PositioningBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
   );
 }
 
-function PersonasBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
+function PersonasBlock({ tb, mission }: { tb: NonNullable<Mission["toolbox"]>; mission: Mission }) {
   return (
     <div>
       <h3 className="font-display text-xl font-bold mb-3 flex items-center gap-2"><Users className="h-5 w-5 text-accent" /> Personas cibles</h3>
@@ -540,7 +554,10 @@ function PersonasBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
                   <CardTitle className="text-base">{p.title}</CardTitle>
                   <CardDescription className="text-xs uppercase tracking-wider text-accent font-bold">PERSONA {String(i + 1).padStart(2, "0")}</CardDescription>
                 </div>
-                <CommentTrigger anchorType="persona" anchorId={String(i)} anchorLabel={`Persona ${i + 1} · ${p.title}`} />
+                <div className="flex items-center gap-2">
+                  <ValidationBadge validated={isValidated(mission.validations, ValidationKey.persona(i))} />
+                  <CommentTrigger anchorType="persona" anchorId={String(i)} anchorLabel={`Persona ${i + 1} · ${p.title}`} />
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
@@ -557,12 +574,15 @@ function PersonasBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
   );
 }
 
-function ArgumentsBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
+function ArgumentsBlock({ tb, mission }: { tb: NonNullable<Mission["toolbox"]>; mission: Mission }) {
   return (
     <div>
-      <div className="flex items-center justify-between gap-3 mb-3">
+      <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <h3 className="font-display text-xl font-bold">Arguments massue & disqualification</h3>
-        <CommentTrigger anchorType="arguments" anchorId={null} anchorLabel="Arguments & disqualification" />
+        <div className="flex items-center gap-2">
+          <ValidationBadge validated={isValidated(mission.validations, ValidationKey.arguments_())} />
+          <CommentTrigger anchorType="arguments" anchorId={null} anchorLabel="Arguments & disqualification" />
+        </div>
       </div>
       {tb.killerArguments.length > 0 && (
         <div className="grid md:grid-cols-2 gap-3 mb-4">
@@ -584,7 +604,7 @@ function ArgumentsBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
   );
 }
 
-function PitchBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
+function PitchBlock({ tb, mission }: { tb: NonNullable<Mission["toolbox"]>; mission: Mission }) {
   return (
     <div>
       <h3 className="font-display text-xl font-bold mb-3 flex items-center gap-2"><Phone className="h-5 w-5 text-accent" /> Pitch V1</h3>
@@ -593,9 +613,10 @@ function PitchBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
           <Card key={s.id}>
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="accent">{s.id}</Badge>
                   <CardTitle className="text-base">{s.label}</CardTitle>
+                  <ValidationBadge validated={isValidated(mission.validations, ValidationKey.pitch(s.id))} />
                 </div>
                 <CommentTrigger
                   anchorType="pitch"
@@ -619,7 +640,7 @@ function PitchBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
   );
 }
 
-function ObjectionsBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
+function ObjectionsBlock({ tb, mission }: { tb: NonNullable<Mission["toolbox"]>; mission: Mission }) {
   return (
     <div>
       <h3 className="font-display text-xl font-bold mb-3 flex items-center gap-2"><Shield className="h-5 w-5 text-accent" /> Traitement des objections</h3>
@@ -631,9 +652,10 @@ function ObjectionsBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
             <Card key={code}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="accent">{code}</Badge>
                     <CardTitle className="text-base">{OBJ_CATS[code]}</CardTitle>
+                    <ValidationBadge validated={isValidated(mission.validations, ValidationKey.objection(code))} />
                   </div>
                   <CommentTrigger
                     anchorType="objection_family"
@@ -658,12 +680,15 @@ function ObjectionsBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
   );
 }
 
-function QualificationBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
+function QualificationBlock({ tb, mission }: { tb: NonNullable<Mission["toolbox"]>; mission: Mission }) {
   return (
     <div>
-      <div className="flex items-center justify-between gap-3 mb-3">
+      <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <h3 className="font-display text-xl font-bold flex items-center gap-2"><Layers className="h-5 w-5 text-accent" /> Matrice de qualification (R1)</h3>
-        <CommentTrigger anchorType="qualification" anchorId={null} anchorLabel="Matrice de qualification" />
+        <div className="flex items-center gap-2">
+          <ValidationBadge validated={isValidated(mission.validations, ValidationKey.qualification())} />
+          <CommentTrigger anchorType="qualification" anchorId={null} anchorLabel="Matrice de qualification" />
+        </div>
       </div>
       <Card>
         <CardContent className="py-6">

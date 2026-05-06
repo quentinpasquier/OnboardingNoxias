@@ -41,6 +41,7 @@ type Row = {
   status: MissionStatus | null;
   share_token: string | null;
   recommendations: string | null;
+  validations: Record<string, boolean> | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -59,6 +60,7 @@ export function rowToMission(r: Row): Mission {
     status: r.status ?? "in_progress",
     shareToken: r.share_token ?? undefined,
     recommendations: r.recommendations ?? undefined,
+    validations: r.validations ?? {},
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -77,6 +79,7 @@ function missionToRow(m: Mission, userId?: string): Partial<Row> {
     status: m.status ?? "in_progress",
     share_token: m.shareToken ?? null,
     recommendations: m.recommendations ?? null,
+    validations: m.validations ?? {},
     ...(userId ? { created_by: userId } : {}),
   };
 }

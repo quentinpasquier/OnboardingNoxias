@@ -92,7 +92,15 @@ const PERSONA_FIELD_LABEL: Record<string, string> = {
   triggers: "Déclencheurs d'achat",
 };
 
-export function PersonasEditor({ value, onChange }: { value: Toolbox["personas"]; onChange: (v: Toolbox["personas"]) => void }) {
+export function PersonasEditor({
+  value,
+  onChange,
+  validationSlot,
+}: {
+  value: Toolbox["personas"];
+  onChange: (v: Toolbox["personas"]) => void;
+  validationSlot?: (index: number) => React.ReactNode;
+}) {
   function addPersona() {
     onChange([
       ...value,
@@ -126,9 +134,12 @@ export function PersonasEditor({ value, onChange }: { value: Toolbox["personas"]
                   onChange(next);
                 }}
               />
-              <Button variant="ghost" size="sm" onClick={() => removePersona(i)} className="text-muted-foreground hover:text-destructive shrink-0">
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2 shrink-0">
+                {validationSlot?.(i)}
+                <Button variant="ghost" size="sm" onClick={() => removePersona(i)} className="text-muted-foreground hover:text-destructive">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="grid md:grid-cols-2 gap-3">

@@ -37,6 +37,7 @@ export type Mission = {
   status?: MissionStatus;
   shareToken?: string;
   recommendations?: string;
+  validations?: Record<string, boolean>;
   createdAt: string;
   updatedAt: string;
 };

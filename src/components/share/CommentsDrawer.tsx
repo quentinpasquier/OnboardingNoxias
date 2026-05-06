@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { X, Send, CheckCircle2, RotateCcw, Trash2, Loader2, MessageSquareText } from "lucide-react";
+import { X, Send, CheckCircle2, Trash2, Loader2, MessageSquareText } from "lucide-react";
 import { useComments } from "@/components/share/CommentsContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { formatDate } from "@/lib/utils";
 
 export function CommentsDrawer() {
-  const { active, close, comments, authorName, setAuthorName, add, resolve, remove } = useComments();
+  const { active, close, comments, authorName, setAuthorName, add, remove } = useComments();
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,13 +100,12 @@ export function CommentsDrawer() {
 
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {thread.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic text-center py-8">Pas encore de commentaire sur cet élément. Laissez le premier !</p>
+                <p className="text-sm text-muted-foreground italic text-center py-8">Pas encore de commentaire sur cet élément. Laissez le premier ! L'équipe Noxias verra votre retour et le prendra en compte.</p>
               ) : (
                 thread.map((c) => (
                   <CommentBubble
                     key={c.id}
                     comment={c}
-                    onResolve={(v) => resolve(c.id, v).catch((e) => setError(e instanceof Error ? e.message : "Erreur"))}
                     onDelete={() => remove(c.id).catch((e) => setError(e instanceof Error ? e.message : "Erreur"))}
                   />
                 ))
@@ -146,44 +145,31 @@ export function CommentsDrawer() {
 
 function CommentBubble({
   comment,
-  onResolve,
   onDelete,
 }: {
   comment: import("@/types/mission").MissionComment;
-  onResolve: (v: boolean) => void;
   onDelete: () => void;
 }) {
-  const isAdmin = comment.authorRole === "admin";
   return (
-    <div className={`rounded-lg border p-3 transition-opacity ${comment.resolved ? "opacity-60 bg-secondary/40" : isAdmin ? "bg-accent/5 border-accent/30" : "bg-card"}`}>
+    <div className={`rounded-lg border p-3 transition-opacity ${comment.resolved ? "opacity-60 bg-secondary/40" : "bg-card"}`}>
       <div className="flex items-center justify-between gap-2 mb-1.5">
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-medium text-sm truncate">{comment.authorName || "Anonyme"}</span>
-          {isAdmin && <Badge variant="accent" className="text-[10px]">Noxias</Badge>}
-          {comment.resolved && <Badge variant="success" className="text-[10px]"><CheckCircle2 className="h-2.5 w-2.5 mr-0.5" /> résolu</Badge>}
+          {comment.resolved && <Badge variant="success" className="text-[10px]"><CheckCircle2 className="h-2.5 w-2.5 mr-0.5" /> traité par Noxias</Badge>}
         </div>
         <span className="text-[10px] text-muted-foreground shrink-0">{formatDate(comment.createdAt)}</span>
       </div>
       <p className={`text-sm leading-relaxed whitespace-pre-wrap ${comment.resolved ? "line-through" : ""}`}>{comment.body}</p>
       <div className="flex items-center gap-1 mt-2 -mb-1">
-        {comment.resolved ? (
-          <Button onClick={() => onResolve(false)} variant="ghost" size="sm" className="h-6 px-2 text-xs">
-            <RotateCcw className="h-3 w-3" /> Rouvrir
-          </Button>
-        ) : (
-          <Button onClick={() => onResolve(true)} variant="ghost" size="sm" className="h-6 px-2 text-xs text-emerald-700 hover:bg-emerald-50">
-            <CheckCircle2 className="h-3 w-3" /> Marquer résolu
-          </Button>
-        )}
         <ConfirmButton
           onConfirm={onDelete}
-          question="Supprimer ?"
-          confirmLabel="Supprimer"
+          question="Retirer ce commentaire ?"
+          confirmLabel="Retirer"
           variant="ghost"
           size="sm"
           className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
         >
-          <Trash2 className="h-3 w-3" />
+          <Trash2 className="h-3 w-3" /> Retirer
         </ConfirmButton>
       </div>
     </div>

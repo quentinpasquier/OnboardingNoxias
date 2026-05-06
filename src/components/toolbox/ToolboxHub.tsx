@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef } from "react";
 import Link from "next/link";
-import { Sparkles, RefreshCw, ArrowRight, CheckCircle2, AlertTriangle, StopCircle, FileQuestion } from "lucide-react";
+import { Sparkles, RefreshCw, ArrowRight, CheckCircle2, AlertTriangle, StopCircle, FileQuestion, Trash2 } from "lucide-react";
 import type { Mission } from "@/types/mission";
 import type { MissionUpdater } from "@/hooks/use-mission";
 import type { Toolbox } from "@/lib/toolbox-schema";
@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button as _ } from "@/components/ui/button";
 import { AiThinking } from "@/components/ai/AiThinking";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 
 type ProgressState = { done: number; total: number; current: string };
 
@@ -103,6 +104,10 @@ export function ToolboxHub({ mission, update }: { mission: Mission; update: (u: 
     runJobs(allJobs());
   }
 
+  function clearAll() {
+    update((prev) => ({ ...prev, toolbox: null }));
+  }
+
   const missingCount = missingJobs(tb).length;
 
   return (
@@ -149,6 +154,18 @@ export function ToolboxHub({ mission, update }: { mission: Mission; update: (u: 
                   <Button onClick={startRegenerateAll} variant="outline" size="sm" disabled={busy}>
                     <RefreshCw /> Tout régénérer
                   </Button>
+                )}
+                {someDone && (
+                  <ConfirmButton
+                    onConfirm={clearAll}
+                    question="Vider toute la boîte ?"
+                    confirmLabel="Tout vider"
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 /> Tout vider
+                  </ConfirmButton>
                 )}
               </div>
             </div>

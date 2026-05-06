@@ -181,3 +181,34 @@ export function mergeJobResult(toolbox: Toolbox | null, job: Job, data: Record<s
       return { ...tb, qualification: (data.qualification ?? { criteria: [], tiers: [] }) as Toolbox["qualification"] };
   }
 }
+
+/**
+ * Vide les données d'un job dans la toolbox (pour permettre la régénération).
+ */
+export function clearJobInToolbox(toolbox: Toolbox | null, job: Job): Toolbox {
+  const tb: Toolbox = toolbox ?? emptyToolbox();
+  const empty = emptyToolbox();
+  switch (job.type) {
+    case "positioning":
+      return { ...tb, positioning: empty.positioning };
+    case "personas":
+      return { ...tb, personas: [] };
+    case "arguments":
+      return { ...tb, killerArguments: [], disqualified: "" };
+    case "pitch_section":
+      return { ...tb, pitch: tb.pitch.filter((p) => p.id !== job.id) };
+    case "objection_category":
+      return { ...tb, objections: tb.objections.filter((o) => o.category !== job.code) };
+    case "qualification":
+      return { ...tb, qualification: empty.qualification };
+  }
+}
+
+/** Vide tous les jobs d'une section. */
+export function clearSectionInToolbox(toolbox: Toolbox | null, key: SectionKey): Toolbox {
+  let next: Toolbox = toolbox ?? emptyToolbox();
+  for (const job of expandSectionToJobs(key)) {
+    next = clearJobInToolbox(next, job);
+  }
+  return next;
+}

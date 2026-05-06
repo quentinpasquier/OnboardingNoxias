@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo, useRef, useEffect } from "react";
-import { Sparkles, Loader2, Check, X, Wand2, CheckCircle2, FileQuestion, FileEdit, StopCircle } from "lucide-react";
+import { Sparkles, Loader2, Check, X, Wand2, CheckCircle2, FileQuestion, FileEdit, StopCircle, Trash2 } from "lucide-react";
 import type { Mission } from "@/types/mission";
 import { MATRIX_QUESTIONS, CATEGORY_GROUPS } from "@/lib/matrix-questions";
 import type { MissionUpdater } from "@/hooks/use-mission";
@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 
 type Status = "draft" | "validated" | "empty";
 
@@ -93,6 +94,32 @@ export function MatrixPanel({ mission, update }: { mission: Mission; update: (u:
     });
   }
 
+  function clearAnswer(id: number) {
+    update((prev) => {
+      const matrix = { ...prev.matrix };
+      const status = { ...(prev.matrixStatus ?? {}) };
+      delete matrix[id];
+      delete status[id];
+      return { ...prev, matrix, matrixStatus: status };
+    });
+  }
+
+  function clearSection(ids: number[]) {
+    update((prev) => {
+      const matrix = { ...prev.matrix };
+      const status = { ...(prev.matrixStatus ?? {}) };
+      for (const id of ids) {
+        delete matrix[id];
+        delete status[id];
+      }
+      return { ...prev, matrix, matrixStatus: status };
+    });
+  }
+
+  function clearAll() {
+    update((prev) => ({ ...prev, matrix: {}, matrixStatus: {} }));
+  }
+
   return (
     <div className="space-y-5">
       <BulkGenerateBar
@@ -100,6 +127,7 @@ export function MatrixPanel({ mission, update }: { mission: Mission; update: (u:
         counts={counts}
         onApply={applyDraftAnswers}
         onValidateAll={validateAllDrafts}
+        onClearAll={clearAll}
       />
 
       <div className="grid lg:grid-cols-[260px_1fr] gap-6">
@@ -121,11 +149,25 @@ export function MatrixPanel({ mission, update }: { mission: Mission; update: (u:
                     <span className="text-muted-foreground">{validatedCount}/{g.ids.length}</span>
                   </span>
                 </button>
-                {isActive && draftCount > 0 && (
-                  <div className="px-3 pb-2 pt-1">
-                    <Button size="sm" variant="outline" className="w-full text-xs" onClick={() => validateSection(g.ids)}>
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Valider la section ({draftCount})
-                    </Button>
+                {isActive && (draftCount > 0 || (validatedCount + draftCount) > 0) && (
+                  <div className="px-3 pb-2 pt-1 space-y-1">
+                    {draftCount > 0 && (
+                      <Button size="sm" variant="outline" className="w-full text-xs" onClick={() => validateSection(g.ids)}>
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Valider la section ({draftCount})
+                      </Button>
+                    )}
+                    {(validatedCount + draftCount) > 0 && (
+                      <ConfirmButton
+                        onConfirm={() => clearSection(g.ids)}
+                        question="Vider la section ?"
+                        confirmLabel="Vider"
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-xs text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" /> Vider la section ({validatedCount + draftCount})
+                      </ConfirmButton>
+                    )}
                   </div>
                 )}
               </div>
@@ -144,6 +186,7 @@ export function MatrixPanel({ mission, update }: { mission: Mission; update: (u:
                 status={statusOf(mission, q.id)}
                 setAnswer={(v) => setAnswer(q.id, v)}
                 setStatus={(s) => setStatus(q.id, s)}
+                clear={() => clearAnswer(q.id)}
                 mission={mission}
               />
             );
@@ -157,6 +200,7 @@ export function MatrixPanel({ mission, update }: { mission: Mission; update: (u:
 function BulkGenerateBar({
   mission,
   counts,
+  onClearAll,
   onApply,
   onValidateAll,
 }: {
@@ -164,6 +208,7 @@ function BulkGenerateBar({
   counts: { drafts: number; validated: number; empty: number };
   onApply: (items: { id: number; text: string }[]) => void;
   onValidateAll: () => void;
+  onClearAll: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -257,11 +302,23 @@ function BulkGenerateBar({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {counts.drafts > 0 && (
             <Button variant="outline" size="sm" onClick={onValidateAll}>
               <CheckCircle2 /> Valider tous les brouillons
             </Button>
+          )}
+          {(counts.drafts + counts.validated) > 0 && (
+            <ConfirmButton
+              onConfirm={onClearAll}
+              question="Vider toute la matrice ?"
+              confirmLabel="Tout vider"
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 /> Tout vider ({counts.drafts + counts.validated})
+            </ConfirmButton>
           )}
           <Button
             variant="accent"
@@ -385,6 +442,7 @@ function MatrixRow({
   status,
   setAnswer,
   setStatus,
+  clear,
   mission,
 }: {
   question: { id: number; category: string; question: string; hint?: string };
@@ -392,6 +450,7 @@ function MatrixRow({
   status: Status;
   setAnswer: (v: string) => void;
   setStatus: (s: "draft" | "validated") => void;
+  clear: () => void;
   mission: Mission;
 }) {
   const [aiOpen, setAiOpen] = useState(false);
@@ -504,6 +563,20 @@ function MatrixRow({
             <Button size="sm" variant="accent" onClick={() => setStatus("validated")}>
               <Check /> Valider la réponse
             </Button>
+          </div>
+        )}
+        {status !== "empty" && (
+          <div className="flex justify-end pt-1">
+            <ConfirmButton
+              onConfirm={() => { clear(); setEditing(true); }}
+              question="Vider cette réponse ?"
+              confirmLabel="Vider"
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Vider
+            </ConfirmButton>
           </div>
         )}
       </CardContent>

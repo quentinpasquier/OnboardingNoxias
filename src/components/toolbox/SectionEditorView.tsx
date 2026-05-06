@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, RefreshCw, Sparkles, StopCircle, Plus } from "lucide-react";
+import { ArrowLeft, RefreshCw, Sparkles, StopCircle, Plus, Trash2 } from "lucide-react";
 import { BonhommeEmpty } from "@/components/illustrations/Bonhomme";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { useMission } from "@/hooks/use-mission";
 import type { Toolbox } from "@/lib/toolbox-schema";
 import {
@@ -13,6 +14,8 @@ import {
   expandSectionToJobs,
   jobLabel,
   mergeJobResult,
+  clearJobInToolbox,
+  clearSectionInToolbox,
   PITCH_SECTION_LABELS,
   OBJECTION_CATEGORY_LABELS,
   type SectionKey,
@@ -74,7 +77,21 @@ export function SectionEditorView({ missionId, sectionKey }: { missionId: string
               <Badge variant="outline">À générer</Badge>
             )}
           </div>
-          <RegenerateAllInSection mission={mission} sectionKey={sectionKey} update={update} />
+          <div className="flex items-center gap-2 flex-wrap">
+            {anyJobDone && (
+              <ConfirmButton
+                onConfirm={() => update((prev) => ({ ...prev, toolbox: clearSectionInToolbox(prev.toolbox, sectionKey) }))}
+                question="Vider cette section ?"
+                confirmLabel="Vider"
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 /> Vider cette section
+              </ConfirmButton>
+            )}
+            <RegenerateAllInSection mission={mission} sectionKey={sectionKey} update={update} />
+          </div>
         </div>
         <p className="text-muted-foreground mt-2 max-w-2xl">{def.description}</p>
       </div>
@@ -210,7 +227,21 @@ function PitchPerSubsection({
                   <CardTitle className="text-base">{PITCH_SECTION_LABELS[id]}</CardTitle>
                   {hasContent && <span className="text-xs text-muted-foreground">· {section!.scripts.length} script{section!.scripts.length > 1 ? "s" : ""}</span>}
                 </div>
-                <RegenerateJobButton mission={mission} job={job} update={update} compact />
+                <div className="flex items-center gap-2 flex-wrap">
+                  {hasContent && (
+                    <ConfirmButton
+                      onConfirm={() => update((prev) => ({ ...prev, toolbox: clearJobInToolbox(prev.toolbox, job) }))}
+                      question="Vider ce bloc ?"
+                      confirmLabel="Vider"
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 /> Vider
+                    </ConfirmButton>
+                  )}
+                  <RegenerateJobButton mission={mission} job={job} update={update} compact />
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -331,7 +362,21 @@ function ObjectionsPerCategory({
                   <CardTitle className="text-base">{OBJECTION_CATEGORY_LABELS[code]}</CardTitle>
                   <span className="text-xs text-muted-foreground">· {items.length} / 6 objections</span>
                 </div>
-                <RegenerateJobButton mission={mission} job={job} update={update} compact />
+                <div className="flex items-center gap-2 flex-wrap">
+                  {items.length > 0 && (
+                    <ConfirmButton
+                      onConfirm={() => update((prev) => ({ ...prev, toolbox: clearJobInToolbox(prev.toolbox, job) }))}
+                      question="Vider cette famille ?"
+                      confirmLabel="Vider"
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 /> Vider
+                    </ConfirmButton>
+                  )}
+                  <RegenerateJobButton mission={mission} job={job} update={update} compact />
+                </div>
               </div>
             </CardHeader>
             <CardContent>

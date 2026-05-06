@@ -3,8 +3,21 @@ import type { Toolbox } from "@/lib/toolbox-schema";
 export type MissionFile = {
   id: string;
   name: string;
-  excerpt: string; // text content (extracted from PDF or pasted)
+  excerpt: string;
   addedAt: string;
+  addedBy?: "admin" | "client";
+};
+
+export type MissionComment = {
+  id: string;
+  missionId: string;
+  anchorType: string;
+  anchorId: string | null;
+  authorName: string;
+  authorRole: "admin" | "client";
+  body: string;
+  resolved: boolean;
+  createdAt: string;
 };
 
 export type MatrixAnswers = Record<number, string>; // questionId -> answer

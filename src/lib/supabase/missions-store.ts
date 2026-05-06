@@ -1,7 +1,33 @@
 "use client";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { Mission, MissionFile, MatrixAnswers, MatrixStatus, MissionStatus } from "@/types/mission";
+import type { Mission, MissionFile, MatrixAnswers, MatrixStatus, MissionStatus, MissionComment } from "@/types/mission";
 import type { Toolbox } from "@/lib/toolbox-schema";
+
+type CommentRow = {
+  id: string;
+  mission_id: string;
+  anchor_type: string;
+  anchor_id: string | null;
+  author_name: string;
+  author_role: "admin" | "client";
+  body: string;
+  resolved: boolean;
+  created_at: string;
+};
+
+function commentRowToComment(r: CommentRow): MissionComment {
+  return {
+    id: r.id,
+    missionId: r.mission_id,
+    anchorType: r.anchor_type,
+    anchorId: r.anchor_id,
+    authorName: r.author_name,
+    authorRole: r.author_role,
+    body: r.body,
+    resolved: r.resolved,
+    createdAt: r.created_at,
+  };
+}
 
 type Row = {
   id: string;
@@ -123,6 +149,100 @@ export const sharedMissionsStore = {
       p_token: token,
       p_recommendations: recommendations,
     });
+    if (error) throw error;
+  },
+
+  async addFile(token: string, name: string, excerpt: string): Promise<void> {
+    const sb = getSupabaseBrowserClient();
+    const { error } = await sb.rpc("add_shared_file", {
+      p_token: token, p_name: name, p_excerpt: excerpt,
+    });
+    if (error) throw error;
+  },
+
+  async removeFile(token: string, fileId: string): Promise<void> {
+    const sb = getSupabaseBrowserClient();
+    const { error } = await sb.rpc("remove_shared_file", {
+      p_token: token, p_file_id: fileId,
+    });
+    if (error) throw error;
+  },
+
+  async listComments(token: string): Promise<MissionComment[]> {
+    const sb = getSupabaseBrowserClient();
+    const { data, error } = await sb.rpc("list_shared_comments", { p_token: token });
+    if (error) throw error;
+    return ((data ?? []) as CommentRow[]).map(commentRowToComment);
+  },
+
+  async addComment(token: string, params: {
+    anchorType: string; anchorId: string | null; authorName: string; body: string;
+  }): Promise<MissionComment> {
+    const sb = getSupabaseBrowserClient();
+    const { data, error } = await sb.rpc("add_shared_comment", {
+      p_token: token,
+      p_anchor_type: params.anchorType,
+      p_anchor_id: params.anchorId,
+      p_author_name: params.authorName,
+      p_body: params.body,
+    }).single();
+    if (error) throw error;
+    return commentRowToComment(data as CommentRow);
+  },
+
+  async resolveComment(token: string, commentId: string, resolved: boolean): Promise<void> {
+    const sb = getSupabaseBrowserClient();
+    const { error } = await sb.rpc("resolve_shared_comment", {
+      p_token: token, p_comment_id: commentId, p_resolved: resolved,
+    });
+    if (error) throw error;
+  },
+
+  async deleteComment(token: string, commentId: string): Promise<void> {
+    const sb = getSupabaseBrowserClient();
+    const { error } = await sb.rpc("delete_shared_comment", {
+      p_token: token, p_comment_id: commentId,
+    });
+    if (error) throw error;
+  },
+};
+
+export const commentsStore = {
+  async listForMission(missionId: string): Promise<MissionComment[]> {
+    const sb = getSupabaseBrowserClient();
+    const { data, error } = await sb.from("mission_comments")
+      .select("*").eq("mission_id", missionId).order("created_at", { ascending: true });
+    if (error) throw error;
+    return (data as CommentRow[]).map(commentRowToComment);
+  },
+
+  async addAdminComment(missionId: string, params: {
+    anchorType: string; anchorId: string | null; authorName: string; body: string;
+  }): Promise<MissionComment> {
+    const sb = getSupabaseBrowserClient();
+    const { data, error } = await sb.from("mission_comments")
+      .insert({
+        mission_id: missionId,
+        anchor_type: params.anchorType,
+        anchor_id: params.anchorId,
+        author_name: params.authorName,
+        author_role: "admin",
+        body: params.body,
+      })
+      .select("*").single();
+    if (error) throw error;
+    return commentRowToComment(data as CommentRow);
+  },
+
+  async setResolved(commentId: string, resolved: boolean): Promise<void> {
+    const sb = getSupabaseBrowserClient();
+    const { error } = await sb.from("mission_comments").update({ resolved }).eq("id", commentId);
+    if (error) throw error;
+  },
+
+  async remove(commentId: string): Promise<void> {
+    const sb = getSupabaseBrowserClient();
+    const { error } = await sb.from("mission_comments").delete().eq("id", commentId);
     if (error) throw error;
   },
 };

@@ -1,6 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Loader2, FileText, Send, CheckCircle2, MessageSquareQuote, Eye, Lock, ListChecks, Sparkles, Target, Users, Phone, Shield, Layers, Globe } from "lucide-react";
+import {
+  Loader2, FileText, Send, CheckCircle2, MessageSquareQuote, Eye, Lock, ListChecks, Sparkles,
+  Target, Users, Phone, Shield, Layers, Globe, ChevronDown, ChevronUp, Download, Upload,
+  Trash2, FileSpreadsheet, FileType, Printer, Plus,
+} from "lucide-react";
 import { sharedMissionsStore } from "@/lib/supabase/missions-store";
 import type { Mission, MissionFile } from "@/types/mission";
 import { MATRIX_QUESTIONS, CATEGORY_GROUPS } from "@/lib/matrix-questions";
@@ -8,9 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { NoxiasLogo } from "@/components/branding/Logo";
 import { formatDate } from "@/lib/utils";
+import { matrixToCsv, downloadCsv } from "@/lib/share-csv";
 
 const OBJ_CATS: Record<string, string> = {
   A: "Prestataires actuels / interne",
@@ -24,14 +32,19 @@ export function SharedMissionView({ token }: { token: string }) {
   const [mission, setMission] = useState<Mission | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
+  async function reload() {
+    try {
+      const m = await sharedMissionsStore.get(token);
+      setMission(m);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erreur");
+      setMission(null);
+    }
+  }
+
   useEffect(() => {
-    sharedMissionsStore
-      .get(token)
-      .then((m) => setMission(m))
-      .catch((e) => {
-        setError(e instanceof Error ? e.message : "Erreur de chargement");
-        setMission(null);
-      });
+    reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   if (mission === undefined) {
@@ -55,47 +68,39 @@ export function SharedMissionView({ token }: { token: string }) {
     );
   }
 
-  const tb = mission.toolbox;
-
   return (
     <>
       <header className="border-b bg-card sticky top-0 z-30">
         <div className="container flex h-20 items-center justify-between gap-4">
           <NoxiasLogo size={48} />
-          <div className="flex items-center gap-3">
-            <Badge variant="outline" className="text-[10px]"><Eye className="h-3 w-3 mr-1" /> LECTURE SEULE</Badge>
-          </div>
+          <Badge variant="outline" className="text-[10px]"><Eye className="h-3 w-3 mr-1" /> LECTURE SEULE</Badge>
         </div>
       </header>
 
-      <main className="container max-w-5xl py-12 noxias-page-in">
-        <section className="mb-12 text-center">
+      <main className="container max-w-5xl py-12 noxias-page-in space-y-6">
+        <section className="text-center mb-2">
           <p className="text-xs uppercase tracking-[0.22em] text-noxias-muted mb-3 font-medium">▶ ONBOARDING NOXIAS</p>
-          <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight mb-3 text-noxias-ink">
-            {mission.clientName}
-          </h1>
+          <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight mb-3 text-noxias-ink">{mission.clientName}</h1>
           {mission.clientWebsite && (
             <a href={mission.clientWebsite} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-accent inline-flex items-center gap-1.5">
               <Globe className="h-3.5 w-3.5" /> {mission.clientWebsite}
             </a>
           )}
           <p className="text-muted-foreground max-w-2xl mx-auto mt-6 leading-relaxed">
-            Cet espace partagé synthétise le travail de cadrage de votre prospection, mené avec l'équipe Noxias. Vous pouvez le consulter, et nous laisser vos recommandations en bas de page.
+            Cet espace partagé synthétise le travail de cadrage de votre prospection. Vous pouvez consulter chaque module, exporter au format de votre choix, ajouter vos documents et nous laisser vos recommandations.
           </p>
         </section>
 
-        {mission.files.length > 0 && (
-          <SharedFilesSection files={mission.files} />
-        )}
+        <LibraryModule mission={mission} token={token} onChange={reload} />
 
-        <SharedMatrixSection mission={mission} />
+        <MatrixModule mission={mission} token={token} />
 
-        {tb && <SharedToolboxSection tb={tb} />}
+        {mission.toolbox && <ToolboxModule mission={mission} token={token} />}
 
         <RecommendationsForm token={token} initialValue={mission.recommendations ?? ""} />
 
-        <footer className="text-center mt-16 pt-8 border-t text-xs text-muted-foreground">
-          <p>▶ Onboarding Noxias · {mission.clientName} · Partage généré le {formatDate(mission.updatedAt)}</p>
+        <footer className="text-center mt-12 pt-8 border-t text-xs text-muted-foreground">
+          <p>▶ Onboarding Noxias · {mission.clientName} · Mis à jour le {formatDate(mission.updatedAt)}</p>
           <p className="mt-1">Document confidentiel destiné au client. Aucune indexation.</p>
         </footer>
       </main>
@@ -103,30 +108,181 @@ export function SharedMissionView({ token }: { token: string }) {
   );
 }
 
-function SharedFilesSection({ files }: { files: MissionFile[] }) {
-  const [viewing, setViewing] = useState<MissionFile | null>(null);
+// ============================================================================
+// Module dépliable générique
+// ============================================================================
+function CollapsibleModule({
+  icon, title, subtitle, defaultOpen = true, actions, children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  defaultOpen?: boolean;
+  actions?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="mb-12">
-      <h2 className="font-display text-2xl font-bold mb-4 flex items-center gap-2">
-        <FileText className="h-6 w-6 text-accent" /> Bibliothèque des documents
-      </h2>
-      <p className="text-sm text-muted-foreground mb-5">Documents que vous avez transmis et qui ont servi de socle à ce travail. Cliquez pour consulter.</p>
-      <div className="grid sm:grid-cols-2 gap-3">
-        {files.map((f) => (
+    <Card className="overflow-hidden">
+      <CardHeader className="bg-secondary/30 border-b">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
           <button
-            key={f.id}
             type="button"
-            onClick={() => setViewing(f)}
-            className="text-left rounded-md border border-border/60 hover:border-accent/40 hover:bg-accent/5 transition-colors p-3 flex items-start gap-3 group"
+            onClick={() => setOpen((v) => !v)}
+            className="flex items-center gap-3 text-left flex-1 min-w-0 group"
           >
-            <FileText className="h-5 w-5 text-accent mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate group-hover:text-accent transition-colors">{f.name}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{Math.round(f.excerpt.length / 1000)} k caractères · {formatDate(f.addedAt)}</p>
-            </div>
+            <span className="text-accent shrink-0">{icon}</span>
+            <span className="min-w-0">
+              <CardTitle className="text-lg font-display group-hover:text-accent transition-colors">{title}</CardTitle>
+              <CardDescription className="text-xs mt-0.5">{subtitle}</CardDescription>
+            </span>
+            <span className="ml-auto text-muted-foreground group-hover:text-accent transition-colors">
+              {open ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+            </span>
           </button>
-        ))}
+          {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
+        </div>
+      </CardHeader>
+      {open && <CardContent className="py-6">{children}</CardContent>}
+    </Card>
+  );
+}
+
+// ============================================================================
+// Module bibliothèque (avec upload / suppression)
+// ============================================================================
+function LibraryModule({ mission, token, onChange }: { mission: Mission; token: string; onChange: () => Promise<void> }) {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pasteName, setPasteName] = useState("");
+  const [pasteText, setPasteText] = useState("");
+  const [viewing, setViewing] = useState<MissionFile | null>(null);
+
+  async function onPdfUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    setError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy("pdf");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/extract-pdf", { method: "POST", body: form });
+      if (!res.ok) throw new Error(`Erreur d'extraction (${res.status})`);
+      const { text } = await res.json();
+      await sharedMissionsStore.addFile(token, file.name, text || "(PDF vide)");
+      await onChange();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setBusy(null);
+      e.target.value = "";
+    }
+  }
+
+  async function onPaste(e: React.FormEvent) {
+    e.preventDefault();
+    if (!pasteName.trim() || !pasteText.trim()) return;
+    setBusy("paste");
+    setError(null);
+    try {
+      await sharedMissionsStore.addFile(token, pasteName.trim(), pasteText.trim());
+      setPasteName("");
+      setPasteText("");
+      await onChange();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function deleteFile(id: string) {
+    setBusy("delete");
+    try {
+      await sharedMissionsStore.removeFile(token, id);
+      await onChange();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <CollapsibleModule
+      icon={<FileText className="h-6 w-6" />}
+      title="Bibliothèque de documents"
+      subtitle={`${mission.files.length} document${mission.files.length > 1 ? "s" : ""} · documents partagés avec Noxias pour cadrer la mission`}
+      defaultOpen={false}
+    >
+      <div className="grid lg:grid-cols-[1fr_1.2fr] gap-6">
+        <div className="space-y-4">
+          <p className="text-sm font-medium text-noxias-deep">Ajouter un document</p>
+          <Label className="border border-dashed border-border rounded-lg p-4 flex flex-col items-center gap-2 cursor-pointer hover:bg-secondary/50 transition-colors">
+            {busy === "pdf" ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5 text-accent" />}
+            <span className="text-sm font-medium">Importer un PDF</span>
+            <span className="text-xs text-muted-foreground text-center">Brief, audit, plaquette, présentation…</span>
+            <input type="file" accept="application/pdf" className="sr-only" onChange={onPdfUpload} disabled={busy === "pdf"} />
+          </Label>
+
+          <form onSubmit={onPaste} className="space-y-2 border border-dashed border-border rounded-lg p-4">
+            <p className="text-sm font-medium">Coller du texte</p>
+            <Input placeholder="Titre du document" value={pasteName} onChange={(e) => setPasteName(e.target.value)} disabled={busy === "paste"} />
+            <Textarea placeholder="Contenu (transcription, mail, brief…)" rows={4} value={pasteText} onChange={(e) => setPasteText(e.target.value)} disabled={busy === "paste"} />
+            <Button type="submit" variant="outline" size="sm" disabled={busy === "paste" || !pasteName.trim() || !pasteText.trim()}>
+              {busy === "paste" ? <Loader2 className="animate-spin" /> : <Plus />} Ajouter
+            </Button>
+          </form>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+
+        <div>
+          <p className="text-sm font-medium text-noxias-deep mb-3">Documents partagés ({mission.files.length})</p>
+          {mission.files.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">Aucun document pour l'instant. Ajoutez-en à gauche pour enrichir le contexte de la mission.</p>
+          ) : (
+            <ul className="space-y-2">
+              {mission.files.map((f) => {
+                const fromClient = f.addedBy === "client";
+                return (
+                  <li key={f.id} className="rounded-md border border-border/60 hover:border-accent/40 transition-colors">
+                    <div className="flex items-start gap-2 p-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setViewing(f)}
+                        className="flex items-start gap-2 flex-1 min-w-0 text-left group hover:text-accent transition-colors"
+                      >
+                        <FileText className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5 group-hover:text-accent transition-colors" />
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-medium truncate">{f.name}</span>
+                          <span className="flex items-center gap-2 mt-1">
+                            <Badge variant="secondary" className="text-[10px]">{Math.round(f.excerpt.length / 1000)} k caractères</Badge>
+                            <span className="text-xs text-muted-foreground">{formatDate(f.addedAt)}</span>
+                            {fromClient && <Badge variant="outline" className="text-[10px]">Ajouté par vous</Badge>}
+                          </span>
+                        </span>
+                      </button>
+                      {fromClient && (
+                        <ConfirmButton
+                          onConfirm={() => deleteFile(f.id)}
+                          question="Retirer ?"
+                          confirmLabel="Retirer"
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </ConfirmButton>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </div>
+
       <Dialog open={viewing !== null} onOpenChange={(v) => { if (!v) setViewing(null); }}>
         <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
           <DialogHeader>
@@ -140,70 +296,147 @@ function SharedFilesSection({ files }: { files: MissionFile[] }) {
           </div>
         </DialogContent>
       </Dialog>
-    </section>
+    </CollapsibleModule>
   );
 }
 
-function SharedMatrixSection({ mission }: { mission: Mission }) {
+// ============================================================================
+// Module Matrice
+// ============================================================================
+function MatrixModule({ mission, token }: { mission: Mission; token: string }) {
   const answered = MATRIX_QUESTIONS.filter((q) => mission.matrix[q.id]?.trim());
-  if (answered.length === 0) return null;
+  const total = MATRIX_QUESTIONS.length;
+
+  function exportCsv() {
+    const safeName = mission.clientName.replace(/[^a-zA-Z0-9-_]/g, "_");
+    downloadCsv(`${safeName}-matrice.csv`, matrixToCsv(mission));
+  }
+
+  function exportPdf() {
+    window.open(`/share/${token}/print?scope=matrix`, "_blank", "noopener");
+  }
 
   return (
-    <section className="mb-12">
-      <h2 className="font-display text-2xl font-bold mb-4 flex items-center gap-2">
-        <ListChecks className="h-6 w-6 text-accent" /> Matrice de prospection
-      </h2>
-      <p className="text-sm text-muted-foreground mb-5">{answered.length} réponse{answered.length > 1 ? "s" : ""} structurée{answered.length > 1 ? "s" : ""} sur les {MATRIX_QUESTIONS.length} questions du cadrage.</p>
-      <div className="space-y-6">
-        {CATEGORY_GROUPS.map((g) => {
-          const groupAnswers = g.ids.map((id) => MATRIX_QUESTIONS.find((q) => q.id === id)!).filter((q) => mission.matrix[q.id]?.trim());
-          if (groupAnswers.length === 0) return null;
-          return (
-            <div key={g.label}>
-              <h3 className="text-xs uppercase tracking-[0.18em] text-accent font-bold mb-3">{g.label}</h3>
-              <div className="space-y-3">
-                {groupAnswers.map((q) => (
-                  <Card key={q.id}>
-                    <CardHeader className="pb-2">
-                      <div className="flex items-start gap-2 flex-wrap">
-                        <Badge variant="secondary">#{q.id}</Badge>
-                        <CardTitle className="text-base">{q.question}</CardTitle>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <ProseRender text={mission.matrix[q.id]} />
-                    </CardContent>
-                  </Card>
-                ))}
+    <CollapsibleModule
+      icon={<ListChecks className="h-6 w-6" />}
+      title="Matrice de prospection"
+      subtitle={`${answered.length} / ${total} réponses · cadrage stratégique`}
+      defaultOpen={true}
+      actions={<ExportToolbar onCsv={exportCsv} onPdf={exportPdf} onDocx={() => exportSharedDocx(token, "matrix", mission.clientName)} />}
+    >
+      {answered.length === 0 ? (
+        <p className="text-sm text-muted-foreground italic">Aucune réponse pour l'instant.</p>
+      ) : (
+        <div className="space-y-6">
+          {CATEGORY_GROUPS.map((g) => {
+            const groupAnswers = g.ids.map((id) => MATRIX_QUESTIONS.find((q) => q.id === id)!).filter((q) => mission.matrix[q.id]?.trim());
+            if (groupAnswers.length === 0) return null;
+            return (
+              <div key={g.label}>
+                <h3 className="text-xs uppercase tracking-[0.18em] text-accent font-bold mb-3">{g.label}</h3>
+                <div className="space-y-3">
+                  {groupAnswers.map((q) => (
+                    <Card key={q.id}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-start gap-2 flex-wrap">
+                          <Badge variant="secondary">#{q.id}</Badge>
+                          <CardTitle className="text-base">{q.question}</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <ProseRender text={mission.matrix[q.id]} />
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-    </section>
+            );
+          })}
+        </div>
+      )}
+    </CollapsibleModule>
   );
 }
 
-function SharedToolboxSection({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
+// ============================================================================
+// Module Boîte à outils
+// ============================================================================
+function ToolboxModule({ mission, token }: { mission: Mission; token: string }) {
+  const tb = mission.toolbox!;
+  const sectionCount = [
+    tb.positioning?.intro,
+    tb.personas.length > 0,
+    tb.killerArguments.length > 0 || tb.disqualified,
+    tb.pitch.length > 0,
+    tb.objections.length > 0,
+    tb.qualification?.criteria?.length > 0,
+  ].filter(Boolean).length;
+
+  function exportPdf() {
+    window.open(`/share/${token}/print?scope=toolbox`, "_blank", "noopener");
+  }
+
   return (
-    <section className="mb-12 space-y-10">
-      <div>
-        <h2 className="font-display text-2xl font-bold mb-4 flex items-center gap-2">
-          <Sparkles className="h-6 w-6 text-accent" /> Boîte à outils du commercial
-        </h2>
-        <p className="text-sm text-muted-foreground">Toutes les briques opérationnelles co-construites pour armer vos équipes commerciales.</p>
+    <CollapsibleModule
+      icon={<Sparkles className="h-6 w-6" />}
+      title="Boîte à outils du commercial"
+      subtitle={`${sectionCount} / 6 sections · livrable opérationnel`}
+      defaultOpen={true}
+      actions={<ExportToolbar onPdf={exportPdf} onDocx={() => exportSharedDocx(token, "toolbox", mission.clientName)} />}
+    >
+      <div className="space-y-10">
+        {tb.positioning?.intro && <PositioningBlock tb={tb} />}
+        {tb.personas.length > 0 && <PersonasBlock tb={tb} />}
+        {(tb.killerArguments.length > 0 || tb.disqualified) && <ArgumentsBlock tb={tb} />}
+        {tb.pitch.length > 0 && <PitchBlock tb={tb} />}
+        {tb.objections.length > 0 && <ObjectionsBlock tb={tb} />}
+        {tb.qualification?.criteria?.length > 0 && <QualificationBlock tb={tb} />}
       </div>
-
-      {tb.positioning?.intro && <PositioningBlock tb={tb} />}
-      {tb.personas.length > 0 && <PersonasBlock tb={tb} />}
-      {(tb.killerArguments.length > 0 || tb.disqualified) && <ArgumentsBlock tb={tb} />}
-      {tb.pitch.length > 0 && <PitchBlock tb={tb} />}
-      {tb.objections.length > 0 && <ObjectionsBlock tb={tb} />}
-      {tb.qualification?.criteria?.length > 0 && <QualificationBlock tb={tb} />}
-    </section>
+    </CollapsibleModule>
   );
 }
 
+function ExportToolbar({ onCsv, onDocx, onPdf }: { onCsv?: () => void; onDocx?: () => void; onPdf?: () => void }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-xs text-muted-foreground hidden sm:inline-flex items-center gap-1.5"><Download className="h-3.5 w-3.5" /> Exporter</span>
+      {onCsv && <Button onClick={onCsv} variant="outline" size="sm" title="Exporter en CSV"><FileSpreadsheet /> CSV</Button>}
+      {onDocx && <Button onClick={onDocx} variant="outline" size="sm" title="Exporter en Word"><FileType /> DOCX</Button>}
+      {onPdf && <Button onClick={onPdf} variant="outline" size="sm" title="Exporter en PDF"><Printer /> PDF</Button>}
+    </div>
+  );
+}
+
+async function exportSharedDocx(token: string, scope: "matrix" | "toolbox" | "both", clientName: string) {
+  try {
+    const res = await fetch("/api/share/export/docx", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, scope }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? `Erreur ${res.status}`);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const safe = clientName.replace(/[^a-zA-Z0-9-_]/g, "_");
+    const suffix = scope === "matrix" ? "matrice" : scope === "toolbox" ? "boite-a-outils" : "onboarding";
+    a.download = `${safe}-${suffix}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (err) {
+    alert(err instanceof Error ? err.message : "Export DOCX impossible");
+  }
+}
+
+// ============================================================================
+// Sous-blocs de la boîte à outils
+// ============================================================================
 function PositioningBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
   return (
     <div>
@@ -419,6 +652,9 @@ function QualificationBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
   );
 }
 
+// ============================================================================
+// Formulaire recommandations
+// ============================================================================
 function RecommendationsForm({ token, initialValue }: { token: string; initialValue: string }) {
   const [value, setValue] = useState(initialValue);
   const [busy, setBusy] = useState(false);
@@ -440,13 +676,13 @@ function RecommendationsForm({ token, initialValue }: { token: string; initialVa
   }
 
   return (
-    <Card className="mt-12 border-accent/40 bg-accent/5">
+    <Card className="border-accent/40 bg-accent/5">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <MessageSquareQuote className="h-5 w-5 text-accent" /> Vos recommandations
+          <MessageSquareQuote className="h-5 w-5 text-accent" /> Vos recommandations globales
         </CardTitle>
         <CardDescription>
-          Vous souhaitez ajuster un élément du pitch, faire évoluer la stratégie de prospection, ou nous transmettre un retour ? Écrivez-le ici. L'équipe Noxias verra votre message dans son interface.
+          Pour des retours précis sur un élément (un script du pitch, une objection, un persona…), utilisez le système de commentaires bientôt disponible. Ici, vous pouvez nous transmettre une vision d'ensemble.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -454,9 +690,9 @@ function RecommendationsForm({ token, initialValue }: { token: string; initialVa
           <Textarea
             value={value}
             onChange={(e) => { setValue(e.target.value); setDone(false); }}
-            rows={8}
+            rows={6}
             maxLength={10000}
-            placeholder="Ex. Sur le pitch 4.0, j'aimerais qu'on insiste plus sur l'argument prix. Sur les personas, j'ajouterais le DAF en cible secondaire. Côté objections D, on voit aussi…"
+            placeholder="Ex. Sur le pitch 4.0, j'aimerais qu'on insiste plus sur l'argument prix. Sur les personas, j'ajouterais le DAF en cible secondaire…"
             disabled={busy}
           />
           <div className="flex items-center justify-between gap-3">
@@ -464,7 +700,7 @@ function RecommendationsForm({ token, initialValue }: { token: string; initialVa
             <div className="flex items-center gap-3">
               {done && !busy && (
                 <span className="text-sm text-emerald-700 inline-flex items-center gap-1.5">
-                  <CheckCircle2 className="h-4 w-4" /> Recommandations envoyées
+                  <CheckCircle2 className="h-4 w-4" /> Envoyé
                 </span>
               )}
               <Button type="submit" variant="accent" disabled={busy || !value.trim()}>
@@ -479,6 +715,9 @@ function RecommendationsForm({ token, initialValue }: { token: string; initialVa
   );
 }
 
+// ============================================================================
+// Helpers
+// ============================================================================
 function ProseRender({ text }: { text: string }) {
   const lines = text.split("\n");
   const blocks: React.ReactNode[] = [];

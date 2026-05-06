@@ -429,6 +429,14 @@ function buildSommaire(scope: ExportScope): Paragraph[] {
 export async function POST(req: Request) {
   try {
     const { mission, scope = "both" } = (await req.json()) as { mission: Mission; scope?: ExportScope };
+    return await renderMissionDocxResponse(mission, scope);
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Erreur" }, { status: 500 });
+  }
+}
+
+export async function renderMissionDocxResponse(mission: Mission, scope: ExportScope = "both") {
+  try {
 
     const docTitle = scope === "matrix"
       ? "Matrice de prospection"

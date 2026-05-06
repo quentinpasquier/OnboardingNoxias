@@ -11,6 +11,8 @@ function isPublicPath(pathname: string) {
   if (pathname.startsWith("/favicon")) return true;
   if (pathname.startsWith("/brand/")) return true;
   if (pathname.startsWith("/share/")) return true;
+  if (pathname === "/api/extract-pdf") return true;
+  if (pathname.startsWith("/api/share/")) return true;
   return false;
 }
 

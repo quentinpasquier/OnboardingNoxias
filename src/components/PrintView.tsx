@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, Fragment } from "react";
-import { missionsStore } from "@/lib/supabase/missions-store";
+import { missionsStore, sharedMissionsStore } from "@/lib/supabase/missions-store";
 import type { Mission } from "@/types/mission";
 import type { ExportScope } from "@/lib/exporters";
 import { MATRIX_QUESTIONS } from "@/lib/matrix-questions";
@@ -52,12 +52,17 @@ const OBJECTION_METHOD: { step: number; title: string; subtitle: string; example
   },
 ];
 
-export function PrintView({ missionId, scope = "both" }: { missionId: string; scope?: ExportScope }) {
+export function PrintView({ missionId, token, scope = "both" }: { missionId?: string; token?: string; scope?: ExportScope }) {
   const [mission, setMission] = useState<Mission | null | undefined>(undefined);
 
   useEffect(() => {
-    missionsStore.get(missionId).then(setMission).catch(() => setMission(null));
-  }, [missionId]);
+    const loader = token
+      ? sharedMissionsStore.get(token)
+      : missionId
+        ? missionsStore.get(missionId)
+        : Promise.resolve(null);
+    loader.then(setMission).catch(() => setMission(null));
+  }, [missionId, token]);
 
   if (mission === undefined) return <main className="p-8">Chargement…</main>;
   if (mission === null) return <main className="p-8">Mission introuvable.</main>;

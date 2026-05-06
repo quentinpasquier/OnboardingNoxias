@@ -16,13 +16,40 @@ const OBJ_CATS: Record<string, string> = {
   E: "Besoin / pertinence",
 };
 
-const PITCH_FLOW: { id: string; label: string }[] = [
-  { id: "1.0", label: "Passage du barrage" },
-  { id: "1.1", label: "Brise-glace décideur" },
-  { id: "2.0", label: "Qualification" },
-  { id: "3.0", label: "PAIN & KPI" },
-  { id: "4.0", label: "Pitch adapté" },
-  { id: "5.0", label: "Prise de RDV" },
+const PITCH_FLOW: { id: string; label: string; trigger: string }[] = [
+  { id: "1.0", label: "Passage du barrage", trigger: "Filtre actif" },
+  { id: "1.1", label: "Brise-glace décideur", trigger: "Décideur en ligne" },
+  { id: "2.0", label: "Qualification", trigger: "Cadrer le contexte" },
+  { id: "3.0", label: "PAIN & KPI", trigger: "Identifier la douleur" },
+  { id: "4.0", label: "Pitch adapté", trigger: "Répondre par la valeur" },
+  { id: "5.0", label: "Prise de RDV", trigger: "Verrouiller la suite" },
+];
+
+const OBJECTION_METHOD: { step: number; title: string; subtitle: string; example: string }[] = [
+  {
+    step: 1,
+    title: "Accuser réception",
+    subtitle: "Reconnaître la légitimité, ne pas contredire",
+    example: "« Je comprends parfaitement, c'est une vraie question — beaucoup de nos clients se la posaient avant. »",
+  },
+  {
+    step: 2,
+    title: "Requalifier",
+    subtitle: "Creuser pour mieux répondre",
+    example: "« Aidez-moi à mieux comprendre : qu'est-ce qui vous fait dire ça concrètement aujourd'hui ? »",
+  },
+  {
+    step: 3,
+    title: "Répondre par la valeur",
+    subtitle: "Argument concret + preuve + chiffre",
+    example: "« Justement, c'est là qu'on apporte X. Concrètement, sur un cas similaire, on a fait Y en Z jours. »",
+  },
+  {
+    step: 4,
+    title: "Recadrer & verrouiller",
+    subtitle: "Refermer sur l'engagement suivant",
+    example: "« Donc si je résume, vous êtes d'accord que [bénéfice] est essentiel. On en parle 30 min mardi ? »",
+  },
 ];
 
 export function PrintView({ missionId, scope = "both" }: { missionId: string; scope?: ExportScope }) {
@@ -196,19 +223,23 @@ export function PrintView({ missionId, scope = "both" }: { missionId: string; sc
             <p className="part-intro">Trame d'entretien complète : passage du barrage, brise-glace décideur, qualification de la situation, questions PAIN & KPI, pitch de réponse adapté à la douleur identifiée et formulation de prise de RDV.</p>
 
             <div className="pitch-flow keep-together">
-              {PITCH_FLOW.map((step, i) => (
-                <Fragment key={step.id}>
-                  <div className="pitch-flow-step">
-                    <div className="pitch-flow-circle">{step.id}</div>
-                    <p className="pitch-flow-label">{step.label}</p>
-                  </div>
-                  {i < PITCH_FLOW.length - 1 && (
-                    <div className="pitch-flow-connector" aria-hidden>
-                      <span className="pitch-flow-arrow" />
+              <p className="pitch-flow-eyebrow">PARCOURS COMMERCIAL — 6 ÉTAPES À DÉROULER DANS L'ORDRE</p>
+              <div className="pitch-flow-row">
+                {PITCH_FLOW.map((step, i) => (
+                  <Fragment key={step.id}>
+                    <div className="pitch-flow-step">
+                      <div className="pitch-flow-circle">{step.id}</div>
+                      <p className="pitch-flow-label">{step.label}</p>
+                      <p className="pitch-flow-trigger">{step.trigger}</p>
                     </div>
-                  )}
-                </Fragment>
-              ))}
+                    {i < PITCH_FLOW.length - 1 && (
+                      <div className="pitch-flow-connector" aria-hidden>
+                        <span className="pitch-flow-arrow" />
+                      </div>
+                    )}
+                  </Fragment>
+                ))}
+              </div>
             </div>
 
             {tb.pitch.map((s) => (
@@ -228,6 +259,23 @@ export function PrintView({ missionId, scope = "both" }: { missionId: string; sc
           <section className="page page-break">
             <PartHeader number={showMatrix ? "04" : "03"} label={`PARTIE 0${showMatrix ? "4" : "3"}`} title="Traitement des objections" />
             <p className="part-intro">Cinq familles d'objections classiques : prestataires actuels & interne, budget & coût, temps & priorité, confiance & transparence, besoin & pertinence.</p>
+
+            <div className="obj-method keep-together">
+              <p className="obj-method-eyebrow">MÉTHODE — RÉPONDRE À TOUTE OBJECTION EN 4 ÉTAPES</p>
+              <div className="obj-method-grid">
+                {OBJECTION_METHOD.map((m) => (
+                  <div key={m.step} className="obj-method-card">
+                    <div className="obj-method-num">{String(m.step).padStart(2, "0")}</div>
+                    <p className="obj-method-title">{m.title}</p>
+                    <p className="obj-method-sub">{m.subtitle}</p>
+                    <p className="obj-method-example">{m.example}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="obj-method-footnote">Cette méthode s'applique à toutes les objections du catalogue ci-dessous. Les réponses proposées suivent cette structure.</p>
+            </div>
+
+            <h2 className="section-h2">Catalogue par famille</h2>
 
             <div className="obj-overview keep-together">
               {(["A", "B", "C", "D", "E"] as const).map((code) => {
@@ -318,6 +366,65 @@ export function PrintView({ missionId, scope = "both" }: { missionId: string; sc
                 );
               })}
             </div>
+
+            <article className="qualif-scorecard keep-together page-break">
+              <header className="qualif-scorecard-head">
+                <p className="qualif-scorecard-eyebrow">FICHE D'ÉVALUATION R1 · À IMPRIMER & REMPLIR EN ENTRETIEN</p>
+                <h2 className="qualif-scorecard-title">Scorecard {mission.clientName}</h2>
+                <p className="qualif-scorecard-sub">Une feuille = un prospect. Cocher un score par ligne, totaliser, déclencher le verdict.</p>
+              </header>
+
+              <div className="qualif-scorecard-meta">
+                <div className="qualif-scorecard-field"><span>Date</span><div className="qualif-scorecard-line" /></div>
+                <div className="qualif-scorecard-field"><span>Prospect / société</span><div className="qualif-scorecard-line" /></div>
+                <div className="qualif-scorecard-field"><span>Commercial</span><div className="qualif-scorecard-line" /></div>
+              </div>
+
+              <table className="qualif-scorecard-table">
+                <thead>
+                  <tr>
+                    <th>Critère</th>
+                    <th className="qualif-scorecard-scol">0</th>
+                    <th className="qualif-scorecard-scol">1</th>
+                    <th className="qualif-scorecard-scol">2</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tb.qualification.criteria.map((c, i) => (
+                    <tr key={i}>
+                      <td className="qualif-scorecard-label"><span className="qualif-scorecard-num">{i + 1}.</span> {c.label}</td>
+                      <td><span className="qualif-checkbox" /></td>
+                      <td><span className="qualif-checkbox" /></td>
+                      <td><span className="qualif-checkbox" /></td>
+                    </tr>
+                  ))}
+                  <tr className="qualif-scorecard-total-row">
+                    <td className="qualif-scorecard-totalcell">TOTAL OBTENU</td>
+                    <td colSpan={3} className="qualif-scorecard-totalbox">
+                      <span className="qualif-scorecard-totalvalue">&nbsp;</span>
+                      <span className="qualif-scorecard-totalmax">/ 10</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className="qualif-scorecard-verdict">
+                <p className="qualif-scorecard-eyebrow">VERDICT (cocher une option)</p>
+                <div className="qualif-scorecard-verdict-options">
+                  <span className="qualif-scorecard-verdict-opt verdict-cold"><span className="qualif-checkbox" /> Score &lt; 4 — <strong>Disqualifié</strong> / nurturing long</span>
+                  <span className="qualif-scorecard-verdict-opt verdict-warm"><span className="qualif-checkbox" /> Score 4–6 — <strong>À nourrir</strong> / séquence post-appel</span>
+                  <span className="qualif-scorecard-verdict-opt verdict-hot"><span className="qualif-checkbox" /> Score ≥ 7 — <strong>R2 GO</strong> — caler le rendez-vous</span>
+                </div>
+              </div>
+
+              <div className="qualif-scorecard-notes">
+                <p className="qualif-scorecard-eyebrow">NOTES TERRAIN — DOULEUR IDENTIFIÉE, KPI CITÉ, NEXT STEP</p>
+                <div className="qualif-scorecard-line-long" />
+                <div className="qualif-scorecard-line-long" />
+                <div className="qualif-scorecard-line-long" />
+                <div className="qualif-scorecard-line-long" />
+              </div>
+            </article>
           </section>
         </>
       )}
@@ -1097,6 +1204,257 @@ function PrintStyles() {
       .tier-warm .tier-eyebrow, .tier-warm .tier-score { color: #d97706; }
       .tier-cold { background: #f3f4f6; border-top-color: var(--noxias-print-muted); }
       .tier-cold .tier-eyebrow, .tier-cold .tier-score { color: var(--noxias-print-muted); }
+
+      /* PITCH FLOW — annotations pédagogiques sur le stepper */
+      .pitch-flow-eyebrow {
+        color: var(--noxias-print-accent-dark);
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        font-size: 10px;
+        margin: 0 0 16px;
+        text-align: center;
+      }
+      .pitch-flow-row { display: flex; align-items: flex-start; }
+      .pitch-flow-trigger {
+        font-size: 9.5px;
+        font-style: italic;
+        color: var(--noxias-print-muted);
+        margin: 4px 0 0;
+        padding: 0 2px;
+        line-height: 1.3;
+      }
+
+      /* OBJECTIONS — méthode universelle 4 étapes */
+      .obj-method {
+        margin: 16px 0 36px;
+        padding: 24px;
+        border-radius: 12px;
+        background: var(--noxias-print-deep);
+        color: white;
+      }
+      .obj-method-eyebrow {
+        color: var(--noxias-print-accent);
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        font-size: 11px;
+        margin: 0 0 20px;
+        text-align: center;
+      }
+      .obj-method-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        position: relative;
+      }
+      .obj-method-card {
+        padding: 16px 14px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 8px;
+        border-left: 3px solid var(--noxias-print-accent);
+        position: relative;
+      }
+      .obj-method-num {
+        display: inline-block;
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--noxias-print-accent);
+        line-height: 1;
+        margin-bottom: 8px;
+        letter-spacing: -0.02em;
+      }
+      .obj-method-title {
+        color: white;
+        font-weight: 700;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin: 0 0 4px;
+        line-height: 1.2;
+      }
+      .obj-method-sub {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 11px;
+        margin: 0 0 10px;
+        line-height: 1.35;
+        font-style: italic;
+      }
+      .obj-method-example {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.92);
+        line-height: 1.5;
+        margin: 0;
+        padding: 8px 10px;
+        background: rgba(60, 200, 121, 0.12);
+        border-radius: 4px;
+      }
+      .obj-method-footnote {
+        margin: 16px 0 0;
+        font-size: 10.5px;
+        color: rgba(255, 255, 255, 0.7);
+        text-align: center;
+        font-style: italic;
+      }
+
+      /* QUALIFICATION — scorecard imprimable */
+      .qualif-scorecard {
+        margin: 32px 0;
+        padding: 28px 28px 24px;
+        border: 2px solid var(--noxias-print-deep);
+        border-radius: 12px;
+        background: var(--noxias-print-paper);
+        position: relative;
+      }
+      .qualif-scorecard::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(90deg, #6a7280 0% 40%, #d97706 40% 70%, var(--noxias-print-accent-dark) 70% 100%);
+        border-radius: 10px 10px 0 0;
+      }
+      .qualif-scorecard-head { margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--noxias-print-border); }
+      .qualif-scorecard-eyebrow {
+        color: var(--noxias-print-accent-dark);
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        font-size: 10px;
+        margin: 0 0 4px;
+      }
+      .qualif-scorecard-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--noxias-print-ink);
+        margin: 0 0 4px;
+        letter-spacing: -0.02em;
+      }
+      .qualif-scorecard-sub { font-size: 11.5px; color: var(--noxias-print-muted); font-style: italic; margin: 0; }
+      .qualif-scorecard-meta {
+        display: grid;
+        grid-template-columns: 0.7fr 1.6fr 0.9fr;
+        gap: 14px;
+        margin: 0 0 16px;
+      }
+      .qualif-scorecard-field span {
+        display: block;
+        color: var(--noxias-print-accent-dark);
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        font-size: 9.5px;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+      .qualif-scorecard-line {
+        height: 18px;
+        border-bottom: 1.5px solid var(--noxias-print-deep);
+      }
+      .qualif-scorecard-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 14px 0 18px;
+      }
+      .qualif-scorecard-table thead th {
+        background: var(--noxias-print-deep);
+        color: white;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        padding: 10px 12px;
+      }
+      .qualif-scorecard-table thead th.qualif-scorecard-scol {
+        text-align: center;
+        width: 56px;
+      }
+      .qualif-scorecard-table tbody td {
+        padding: 12px;
+        border-bottom: 1px solid var(--noxias-print-border);
+        font-size: 12px;
+        vertical-align: middle;
+      }
+      .qualif-scorecard-table tbody tr:nth-child(odd) td { background: var(--noxias-print-paper-alt); }
+      .qualif-scorecard-label {
+        font-weight: 600;
+        color: var(--noxias-print-deep);
+        line-height: 1.4;
+      }
+      .qualif-scorecard-num {
+        color: var(--noxias-print-accent);
+        font-weight: 700;
+        margin-right: 6px;
+      }
+      .qualif-checkbox {
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        border: 1.5px solid var(--noxias-print-deep);
+        border-radius: 3px;
+        background: white;
+        vertical-align: middle;
+      }
+      .qualif-scorecard-table tbody td:not(.qualif-scorecard-label):not(.qualif-scorecard-totalcell):not(.qualif-scorecard-totalbox) {
+        text-align: center;
+      }
+      .qualif-scorecard-total-row td {
+        background: var(--noxias-print-deep) !important;
+        color: white;
+        font-weight: 700;
+      }
+      .qualif-scorecard-totalcell {
+        font-size: 12px !important;
+        letter-spacing: 0.1em;
+      }
+      .qualif-scorecard-totalbox {
+        text-align: right !important;
+        padding-right: 16px !important;
+      }
+      .qualif-scorecard-totalvalue {
+        display: inline-block;
+        min-width: 56px;
+        height: 28px;
+        background: white;
+        border-radius: 4px;
+        margin-right: 8px;
+        vertical-align: middle;
+        border: 1.5px solid var(--noxias-print-accent);
+      }
+      .qualif-scorecard-totalmax {
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.85);
+      }
+      .qualif-scorecard-verdict {
+        margin: 16px 0 18px;
+        padding: 14px 16px;
+        background: var(--noxias-print-paper-alt);
+        border-radius: 6px;
+        border-left: 4px solid var(--noxias-print-accent);
+      }
+      .qualif-scorecard-verdict-options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .qualif-scorecard-verdict-opt {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12.5px;
+        line-height: 1.4;
+        color: var(--noxias-print-ink);
+      }
+      .qualif-scorecard-verdict-opt strong { color: var(--noxias-print-deep); }
+      .verdict-cold .qualif-checkbox { border-color: var(--noxias-print-muted); }
+      .verdict-warm .qualif-checkbox { border-color: #d97706; }
+      .verdict-hot .qualif-checkbox { border-color: var(--noxias-print-accent-dark); }
+      .qualif-scorecard-notes {
+        margin-top: 8px;
+      }
+      .qualif-scorecard-line-long {
+        height: 18px;
+        border-bottom: 1px dashed var(--noxias-print-border);
+        margin-top: 10px;
+      }
 
       /* FOOTER */
       .print-footer {

@@ -1,6 +1,6 @@
 /**
  * Schéma JSON et prompts pour la génération de la boîte à outils.
- * Calé sur le template Noxias (référence : Boîte à outils du commercial — DigiLocal).
+ * Calé sur le template Noxias (référence : Boîte à outils du commercial, DigiLocal).
  */
 
 export const TOOLBOX_JSON_SCHEMA = {
@@ -153,7 +153,7 @@ export const TOOLBOX_USER_PROMPT = `Génère la boîte à outils complète du co
 **personas** : produis 1 à 3 personas (idéal 2). Chacun :
 - **title** : "Persona 1 : [phrase descriptive]" (ex. "Persona 1 : Le dirigeant de TPE/PME locale qui veut un site vitrine professionnel sans gérer la technique").
 - **profile** : 2–3 paragraphes narratifs sur qui est ce persona, son contexte, ce qu'il cherche vraiment (au-delà du produit).
-- **kpis** : 1 paragraphe narratif listant les indicateurs qu'il regarde (sans liste à puces — phrasé fluide).
+- **kpis** : 1 paragraphe narratif listant les indicateurs qu'il regarde (sans liste à puces, phrasé fluide).
 - **pains** : 2 paragraphes narratifs. Le quotidien et l'irritant principal en formulations spontanées (« il sait que… mais il n'a ni le temps… »). Inclus 4–5 objections types entre guillemets dans le 2e paragraphe.
 - **motivations** : 1 paragraphe narratif sur ce qui le pousse à avancer.
 - **triggers** : 1 paragraphe narratif sur les moments où le sujet devient prioritaire.
@@ -171,23 +171,23 @@ export const TOOLBOX_USER_PROMPT = `Génère la boîte à outils complète du co
 ---
 
 **pitch** : EXACTEMENT 5 sections, ids dans cet ordre :
-- **"1.0"** — "Si barrage / accueil" — 3–5 scripts variants : standard, "C'est pour quoi ?", "il/elle n'est pas dispo", "demande de précision".
-- **"1.1"** — "Brise-glace / prise de contact avec le décideur" — 3–4 variants : standard, plus directe, plus impactante, + scripts pour gérer "on a déjà…", "encore un prestataire ?", "vous faites quoi exactement ?". **Inclus impérativement la mention d'un cas client réel** (nom, secteur, résultat chiffré ou anecdote) extrait de la question 31 de la matrice — pour crédibiliser dès la prise de contact.
-- **"2.0"** — "Réponse prospect — qualification de la situation actuelle" — 4 scripts pour chaque réponse type du prospect ("on gère en interne", "on a déjà un prestataire", "au cas par cas", "on réfléchit à faire évoluer").
-- **"3.0"** — "Questions de qualification — PAIN & KPI" — 1–2 scripts qui déroulent les vraies questions à poser (priorité actuelle, état du site/produit, coût actuel, engagement, satisfaction, etc. — adapté au métier).
-- **"4.0"** — "Pitch de réponse adapté — proposition de valeur" — **6 à 8 variants**, chacun déclenché par une douleur précise (variant = "Si douleur = …", text = la réplique commerciale).
-- **"5.0"** — "Prise de RDV" — 2–3 variants (formulation standard, version plus directe, version orientée référence/projet) + une checklist mentale.
+- **"1.0"**, "Si barrage / accueil", 3–5 scripts variants : standard, "C'est pour quoi ?", "il/elle n'est pas dispo", "demande de précision".
+- **"1.1"**, "Brise-glace / prise de contact avec le décideur", 3–4 variants : standard, plus directe, plus impactante, + scripts pour gérer "on a déjà…", "encore un prestataire ?", "vous faites quoi exactement ?". **Inclus impérativement la mention d'un cas client réel** (nom, secteur, résultat chiffré ou anecdote) extrait de la question 31 de la matrice, pour crédibiliser dès la prise de contact.
+- **"2.0"**, "Réponse prospect, qualification de la situation actuelle", 4 scripts pour chaque réponse type du prospect ("on gère en interne", "on a déjà un prestataire", "au cas par cas", "on réfléchit à faire évoluer").
+- **"3.0"**, "Questions de qualification, PAIN & KPI", 1–2 scripts qui déroulent les vraies questions à poser (priorité actuelle, état du site/produit, coût actuel, engagement, satisfaction, etc., adapté au métier).
+- **"4.0"**, "Pitch de réponse adapté, proposition de valeur", **6 à 8 variants**, chacun déclenché par une douleur précise (variant = "Si douleur = …", text = la réplique commerciale).
+- **"5.0"**, "Prise de RDV", 2–3 variants (formulation standard, version plus directe, version orientée référence/projet) + une checklist mentale.
 
 Le texte de chaque script est rédigé comme une réplique commerciale **prête à dire à voix haute**, en italique-friendly (le frontend rendra). Format : "Commercial : « … »" ou simplement la phrase entre guillemets.
 
 ---
 
 **objections** : EXACTEMENT 30 objections, ids 1 à 30, **6 par catégorie** :
-- **A** — Prestataires actuels / interne (objections type "j'ai déjà…", "je passe par…", "je gère moi-même", "mon ami / fille / neveu s'en occupe", "je suis engagé", "rester chez le prestataire actuel c'est plus simple").
-- **B** — Budget / coût ("pas le budget", "trop cher", "budget serré", "pas de dépense mensuelle en plus", "investir ailleurs", "plus tard").
-- **C** — Temps / priorité ("pas le temps", "pas la priorité", "envoyez un mail", "débordé", "on vient juste de le faire", "pas de ressources internes").
-- **D** — Confiance / transparence ("mauvaise expérience prestataire", "promesse non tenue", "trop commercial", "comment savoir si différent", "ne pas dépendre", "garder la main").
-- **E** — Besoin / pertinence ("je m'en sors", "pas besoin du produit", "bouche-à-oreille suffit", "pas besoin de référencement / X", "mes clients ne regardent pas", "pas sûr que ça vaille le coup").
+- **A**, Prestataires actuels / interne (objections type "j'ai déjà…", "je passe par…", "je gère moi-même", "mon ami / fille / neveu s'en occupe", "je suis engagé", "rester chez le prestataire actuel c'est plus simple").
+- **B**, Budget / coût ("pas le budget", "trop cher", "budget serré", "pas de dépense mensuelle en plus", "investir ailleurs", "plus tard").
+- **C**, Temps / priorité ("pas le temps", "pas la priorité", "envoyez un mail", "débordé", "on vient juste de le faire", "pas de ressources internes").
+- **D**, Confiance / transparence ("mauvaise expérience prestataire", "promesse non tenue", "trop commercial", "comment savoir si différent", "ne pas dépendre", "garder la main").
+- **E**, Besoin / pertinence ("je m'en sors", "pas besoin du produit", "bouche-à-oreille suffit", "pas besoin de référencement / X", "mes clients ne regardent pas", "pas sûr que ça vaille le coup").
 
 Pour chaque objection :
 - **text** : la phrase du prospect entre guillemets typographiques « … » (≤ 12 mots, naturelle).
@@ -196,8 +196,8 @@ Pour chaque objection :
 ---
 
 **qualification** :
-- **criteria** : EXACTEMENT 5 critères dans cet ordre — Douleur (PAIN), Objectif (GAIN), Budget, Autorité (Décision), Urgence (Déclencheur). Pour chacun, score0/score1/score2 décrivent **avec exemples concrets entre guillemets** (« Mon site n'est plus à jour », « Je paye 200 €/mois et je ne suis pas content »).
-- **tiers** : EXACTEMENT 3 tiers — "Tier A — Lead chaud" (7 à 10), "Tier B — Lead tiède" (4 à 6), "Tier C — Lead froid" (0 à 3). Pour chacun, description (1–3 phrases) + action (1 phrase).
+- **criteria** : EXACTEMENT 5 critères dans cet ordre, Douleur (PAIN), Objectif (GAIN), Budget, Autorité (Décision), Urgence (Déclencheur). Pour chacun, score0/score1/score2 décrivent **avec exemples concrets entre guillemets** (« Mon site n'est plus à jour », « Je paye 200 €/mois et je ne suis pas content »).
+- **tiers** : EXACTEMENT 3 tiers, "Tier A, Lead chaud" (7 à 10), "Tier B, Lead tiède" (4 à 6), "Tier C, Lead froid" (0 à 3). Pour chacun, description (1–3 phrases) + action (1 phrase).
 
 ---
 

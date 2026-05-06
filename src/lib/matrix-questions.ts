@@ -1,5 +1,5 @@
 /**
- * 30 questions de la matrice de prospection — structure issue de la VDEF Bowigo.
+ * 30 questions de la matrice de prospection, structure issue de la VDEF Bowigo.
  * Réutilisable pour n'importe quel client.
  */
 
@@ -14,16 +14,16 @@ export const MATRIX_QUESTIONS: MatrixQuestion[] = [
   { id: 1, category: "1. Objectifs de la prospection", question: "Quels sont vos objectifs principaux ?", hint: "Acquisition / Activation / Conversion / Rétention" },
   { id: 2, category: "2. Cible(s) prioritaire(s)", question: "Quel est votre public cible ?", hint: "Secteur, taille, typologie de projet" },
   { id: 3, category: "2.1 L'anti-cible (disqualification)", question: "Qui NE FAUT-IL PAS prospecter ?" },
-  { id: 4, category: "2.2 Zoom persona — KPI", question: "Quels KPI impactent ce décideur ?" },
-  { id: 5, category: "2.3 Zoom persona — Priorités 6-12 mois", question: "Quelles sont leurs priorités à 6-12 mois ?" },
-  { id: 6, category: "2.4 Zoom persona — Douleurs", question: "À quelles douleurs notre offre répond ?" },
-  { id: 7, category: "2.5 Zoom persona — Motivations positives", question: "Qu'est-ce qui déclenche une décision ?" },
-  { id: 8, category: "2.6 Zoom persona — Cercle d'influence", question: "Qui influence dans la décision ?" },
-  { id: 9, category: "2.7 Zoom persona — Coût d'inaction à 3 mois", question: "Que se passe-t-il s'ils ne font rien ?" },
-  { id: 10, category: "2.8 Zoom persona — Freins internes / Budget", question: "Quels freins et budgets ?" },
+  { id: 4, category: "2.2 Zoom persona, KPI", question: "Quels KPI impactent ce décideur ?" },
+  { id: 5, category: "2.3 Zoom persona, Priorités 6-12 mois", question: "Quelles sont leurs priorités à 6-12 mois ?" },
+  { id: 6, category: "2.4 Zoom persona, Douleurs", question: "À quelles douleurs notre offre répond ?" },
+  { id: 7, category: "2.5 Zoom persona, Motivations positives", question: "Qu'est-ce qui déclenche une décision ?" },
+  { id: 8, category: "2.6 Zoom persona, Cercle d'influence", question: "Qui influence dans la décision ?" },
+  { id: 9, category: "2.7 Zoom persona, Coût d'inaction à 3 mois", question: "Que se passe-t-il s'ils ne font rien ?" },
+  { id: 10, category: "2.8 Zoom persona, Freins internes / Budget", question: "Quels freins et budgets ?" },
   { id: 11, category: "2.9 Traitement des objections", question: "Que répondent-ils pour dire non ?" },
   { id: 12, category: "2.10 Arguments massue (Killer Arguments)", question: "Les phrases qui font mouche ?" },
-  { id: 13, category: "2.11 Zoom persona — Déclencheur", question: "Quels événements précèdent un achat ?" },
+  { id: 13, category: "2.11 Zoom persona, Déclencheur", question: "Quels événements précèdent un achat ?" },
   { id: 14, category: "2.12 Moment de vérité (Time-to-Value)", question: "L'instant précis où ils sont convaincus ?" },
   { id: 15, category: "3. Offre(s) / produits / services", question: "Quels services promouvoir ?" },
   { id: 16, category: "4. Proposition de valeur", question: "Quelle est votre valeur unique ?" },

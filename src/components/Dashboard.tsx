@@ -184,7 +184,7 @@ function MissionCard({ mission }: { mission: Mission }) {
               {toolboxReady && !completed && <Badge variant="secondary" className="text-[10px]">Boîte prête</Badge>}
             </div>
           </div>
-          <CardDescription className="truncate">{mission.clientWebsite || "—"}</CardDescription>
+          <CardDescription className="truncate">{mission.clientWebsite || "Pas de site renseigné"}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>

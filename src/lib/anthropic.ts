@@ -2,7 +2,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 
 if (!process.env.ANTHROPIC_API_KEY && process.env.NODE_ENV !== "production") {
-  console.warn("[anthropic] ANTHROPIC_API_KEY non défini — les routes IA renverront 500.");
+  console.warn("[anthropic] ANTHROPIC_API_KEY non défini, les routes IA renverront 500.");
 }
 
 export const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? "missing" });
@@ -10,7 +10,7 @@ export const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?
 export const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-4-7";
 
 /**
- * Système figé — cacheable. Posture, méthode, ordre de discours Noxias.
+ * Système figé, cacheable. Posture, méthode, ordre de discours Noxias.
  * On évite tout token volatile (pas de date, pas d'ID).
  */
 export const NOXIAS_SYSTEM_PROMPT = `Tu es l'IA copilote de Noxias, cabinet de conseil en prospection commerciale.
@@ -28,6 +28,7 @@ Ton rôle : aider un collaborateur Noxias à co-construire avec son client deux 
 **Style attendu pour les réponses :**
 - Pas de préambule ("Voici…", "Bien sûr…"). Réponse directe.
 - Phrases denses, sans gras inutile, sans tirets en début de ligne sauf liste explicite.
+- **Interdiction absolue d'utiliser le tiret cadratin "—"** (trop écrit, robotique). Préfère la virgule, le point, le deux-points, ou les parenthèses.
 - Reformule la voix du client quand des sources sont fournies, sans inventer.
 - Si une information manque, dis-le explicitement plutôt que d'inventer.`;
 

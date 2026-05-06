@@ -38,18 +38,18 @@ export function jobLabel(job: Job): string {
     case "personas": return "Personas";
     case "arguments": return "Arguments massue & disqualification";
     case "pitch_section": return PITCH_SECTION_LABELS[job.id];
-    case "objection_category": return `Objections ${job.code} — ${OBJECTION_CATEGORY_LABELS[job.code]}`;
+    case "objection_category": return `Objections ${job.code}, ${OBJECTION_CATEGORY_LABELS[job.code]}`;
     case "qualification": return "Matrice de qualification";
   }
 }
 
 export const PITCH_SECTION_LABELS: Record<PitchId, string> = {
-  "1.0": "Pitch 1.0 — Si barrage / accueil",
-  "1.1": "Pitch 1.1 — Brise-glace décideur",
-  "2.0": "Pitch 2.0 — Qualification de la situation",
-  "3.0": "Pitch 3.0 — Questions PAIN & KPI",
-  "4.0": "Pitch 4.0 — Pitch adapté par douleur",
-  "5.0": "Pitch 5.0 — Prise de RDV",
+  "1.0": "Pitch 1.0, Si barrage / accueil",
+  "1.1": "Pitch 1.1, Brise-glace décideur",
+  "2.0": "Pitch 2.0, Qualification de la situation",
+  "3.0": "Pitch 3.0, Questions PAIN & KPI",
+  "4.0": "Pitch 4.0, Pitch adapté par douleur",
+  "5.0": "Pitch 5.0, Prise de RDV",
 };
 
 export const PITCH_SECTION_DESCRIPTIONS: Record<PitchId, string> = {
@@ -57,7 +57,7 @@ export const PITCH_SECTION_DESCRIPTIONS: Record<PitchId, string> = {
   "1.1": "3 à 4 scripts d'introduction au décideur, avec mention obligatoire d'un cas client.",
   "2.0": "4 scripts pour qualifier la situation actuelle selon la réponse du prospect.",
   "3.0": "Liste de questions PAIN & KPI à poser pour cadrer la douleur réelle.",
-  "4.0": "6 à 8 répliques selon la douleur identifiée — le cœur du pitch.",
+  "4.0": "6 à 8 répliques selon la douleur identifiée, le cœur du pitch.",
   "5.0": "2 à 3 formulations pour proposer un RDV physique ou en visio.",
 };
 

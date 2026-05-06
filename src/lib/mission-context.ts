@@ -17,7 +17,7 @@ export function buildMissionContext(mission: Mission, opts: { includeMatrix?: bo
     for (const f of mission.files) {
       const remaining = MAX_TOTAL_FILES - total;
       if (remaining <= 0) {
-        parts.push(`\n### ${f.name}\n[…tronqué — limite contexte atteinte]`);
+        parts.push(`\n### ${f.name}\n[…tronqué, limite contexte atteinte]`);
         continue;
       }
       const slice = f.excerpt.slice(0, Math.min(MAX_PER_FILE, remaining));
@@ -31,7 +31,7 @@ export function buildMissionContext(mission: Mission, opts: { includeMatrix?: bo
     if (answered.length > 0) {
       parts.push(`\n## Matrice déjà remplie (${answered.length}/${MATRIX_QUESTIONS.length})`);
       for (const q of answered) {
-        parts.push(`\n[${q.id}] ${q.category} — ${q.question}\n${mission.matrix[q.id].trim()}`);
+        parts.push(`\n[${q.id}] ${q.category}, ${q.question}\n${mission.matrix[q.id].trim()}`);
       }
     }
   }

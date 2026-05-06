@@ -18,7 +18,7 @@ export function AtelierMatrice({ missionId }: { missionId: string }) {
   const { mission, update } = useMission(missionId);
 
   useEffect(() => {
-    if (mission?.clientName) document.title = `Matrice — ${mission.clientName} — Noxias`;
+    if (mission?.clientName) document.title = `Matrice · ${mission.clientName} · Noxias`;
   }, [mission?.clientName]);
 
   if (mission === undefined) return <AtelierLoading />;
@@ -105,14 +105,14 @@ function NextStepCard({
 }) {
   const tooEarly = ratio < TOOLBOX_THRESHOLD;
   const target = `/missions/${missionId}/boite-a-outils`;
-  const ctaLabel = hasToolbox ? "Continuer vers l'Atelier 2" : "Lancer l'Atelier 2 — Boîte à outils";
+  const ctaLabel = hasToolbox ? "Continuer vers l'Atelier 2" : "Lancer l'Atelier 2, Boîte à outils";
 
   if (tooEarly) {
     return (
       <Card className="mt-12 border-dashed">
         <CardContent className="py-6 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="font-display text-base font-medium">Atelier 2 — Boîte à outils</p>
+            <p className="font-display text-base font-medium">Atelier 2, Boîte à outils</p>
             <p className="text-sm text-muted-foreground mt-1">
               Remplis au moins {Math.ceil(MATRIX_QUESTIONS.length * TOOLBOX_THRESHOLD)} questions sur {MATRIX_QUESTIONS.length} pour générer une boîte à outils cohérente. ({answered}/{MATRIX_QUESTIONS.length} pour l'instant.)
             </p>
@@ -142,7 +142,7 @@ function NextStepCard({
               {ready ? (
                 <>Toutes tes réponses sont validées. L'IA peut maintenant générer la boîte à outils du commercial.</>
               ) : partial ? (
-                <>{validated} validée{validated > 1 ? "s" : ""}, {drafts} en brouillon. Tu peux générer la boîte dès maintenant — l'IA s'appuiera sur les brouillons aussi.</>
+                <>{validated} validée{validated > 1 ? "s" : ""}, {drafts} en brouillon. Tu peux générer la boîte dès maintenant, l'IA s'appuiera sur les brouillons aussi.</>
               ) : null}
             </p>
           </div>

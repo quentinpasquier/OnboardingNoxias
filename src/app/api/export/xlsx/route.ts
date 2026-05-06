@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     // Titre fusionné sur les 4 colonnes
     ws.mergeCells(1, 1, 1, 4);
     const title = ws.getCell(1, 1);
-    title.value = `${mission.clientName} — Matrice de prospection`;
+    title.value = `${mission.clientName}, Matrice de prospection`;
     title.font = { name: "Calibri", size: 16, bold: true, color: { argb: "FFFFFFFF" } };
     title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: INK } };
     title.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
       if (status === "draft") {
         const ansCell = row.getCell(4);
         ansCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF7E0" } };
-        ansCell.note = "Brouillon IA — à valider";
+        ansCell.note = "Brouillon IA, à valider";
       }
 
       // Hauteur dynamique : approx 14pt par 80 chars de réponse

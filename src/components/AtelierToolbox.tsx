@@ -13,7 +13,7 @@ export function AtelierToolbox({ missionId }: { missionId: string }) {
   const { mission, update } = useMission(missionId);
 
   useEffect(() => {
-    if (mission?.clientName) document.title = `Boîte à outils — ${mission.clientName} — Noxias`;
+    if (mission?.clientName) document.title = `Boîte à outils · ${mission.clientName} · Noxias`;
   }, [mission?.clientName]);
 
   if (mission === undefined) return <AtelierLoading />;

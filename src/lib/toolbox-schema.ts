@@ -59,8 +59,8 @@ export const PITCH_STRUCTURE = [
   { id: "1.0", label: "Si barrage / accueil" },
   { id: "1.1", label: "Brise-glace / prise de contact décideur" },
   { id: "2.0", label: "Qualification de la situation actuelle" },
-  { id: "3.0", label: "Questions de qualification — PAIN & KPI" },
-  { id: "4.0", label: "Pitch de réponse adapté — proposition de valeur" },
+  { id: "3.0", label: "Questions de qualification, PAIN & KPI" },
+  { id: "4.0", label: "Pitch de réponse adapté, proposition de valeur" },
   { id: "5.0", label: "Prise de RDV" },
 ];
 

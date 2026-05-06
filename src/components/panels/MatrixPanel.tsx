@@ -204,7 +204,7 @@ function BulkGenerateBar({
           break;
         }
         const batch = batches[i];
-        setProgress({ done: processed, total: missingIds.length, current: `Bloc ${i + 1}/${batches.length} — ${batch.length} question${batch.length > 1 ? "s" : ""}` });
+        setProgress({ done: processed, total: missingIds.length, current: `Bloc ${i + 1}/${batches.length}, ${batch.length} question${batch.length > 1 ? "s" : ""}` });
 
         const res = await fetch("/api/ai/matrix-generate-all", {
           method: "POST",
@@ -221,7 +221,7 @@ function BulkGenerateBar({
           }
           onApply(data.answers);
           processed += data.answers.length;
-          setProgress({ done: processed, total: missingIds.length, current: `Bloc ${i + 1}/${batches.length} — ${processed}/${missingIds.length} appliquées` });
+          setProgress({ done: processed, total: missingIds.length, current: `Bloc ${i + 1}/${batches.length}, ${processed}/${missingIds.length} appliquées` });
         }
       }
       if (!cancelRef.current && processed === missingIds.length) {
@@ -279,7 +279,7 @@ function BulkGenerateBar({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Génération en lot</DialogTitle>
             <DialogDescription>
-              L'IA remplit les <strong>{counts.empty}</strong> question{counts.empty > 1 ? "s" : ""} vide{counts.empty > 1 ? "s" : ""} en plusieurs blocs de {BATCH_SIZE} (pour rester dans les limites de timeout). Chaque réponse arrive en <span className="text-amber-700 font-medium">brouillon</span> — tu valides ensuite ligne par ligne ou par section.
+              L'IA remplit les <strong>{counts.empty}</strong> question{counts.empty > 1 ? "s" : ""} vide{counts.empty > 1 ? "s" : ""} en plusieurs blocs de {BATCH_SIZE} (pour rester dans les limites de timeout). Chaque réponse arrive en <span className="text-amber-700 font-medium">brouillon</span>, tu valides ensuite ligne par ligne ou par section.
             </DialogDescription>
           </DialogHeader>
           {!busy && (
@@ -329,7 +329,7 @@ function BulkGenerateBar({
   );
 }
 
-/** Auto-resize textarea — grows with content, no scrollbar. */
+/** Auto-resize textarea, grows with content, no scrollbar. */
 function AutoTextarea({ value, onChange, ...props }: React.ComponentProps<typeof Textarea>) {
   const ref = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
@@ -500,7 +500,7 @@ function MatrixRow({
         )}
         {status === "draft" && (
           <div className="flex items-center justify-between gap-2 -mt-1">
-            <p className="text-xs text-amber-700">Brouillon IA — relis et valide.</p>
+            <p className="text-xs text-amber-700">Brouillon IA, relis et valide.</p>
             <Button size="sm" variant="accent" onClick={() => setStatus("validated")}>
               <Check /> Valider la réponse
             </Button>
@@ -511,7 +511,7 @@ function MatrixRow({
       <Dialog open={aiOpen} onOpenChange={setAiOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Assistance IA — question #{question.id}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Assistance IA, question #{question.id}</DialogTitle>
             <DialogDescription>{question.question}</DialogDescription>
           </DialogHeader>
 

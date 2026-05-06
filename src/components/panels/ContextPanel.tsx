@@ -56,7 +56,7 @@ export function ContextPanel({ mission, update }: { mission: Mission; update: (u
       });
       if (!res.ok) throw new Error(`Erreur scrape (${res.status})`);
       const { text, title } = await res.json();
-      addFile(`Site web — ${title || scrapeUrl}`, text);
+      addFile(`Site web, ${title || scrapeUrl}`, text);
       update((prev) => prev.clientWebsite ? prev : { ...prev, clientWebsite: scrapeUrl.trim() });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur");

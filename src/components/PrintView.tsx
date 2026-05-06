@@ -30,7 +30,7 @@ const OBJECTION_METHOD: { step: number; title: string; subtitle: string; example
     step: 1,
     title: "Accuser réception",
     subtitle: "Reconnaître la légitimité, ne pas contredire",
-    example: "« Je comprends parfaitement, c'est une vraie question — beaucoup de nos clients se la posaient avant. »",
+    example: "« Je comprends parfaitement, c'est une vraie question, beaucoup de nos clients se la posaient avant. »",
   },
   {
     step: 2,
@@ -70,7 +70,7 @@ export function PrintView({ missionId, scope = "both" }: { missionId: string; sc
     ? "Matrice de prospection"
     : scope === "toolbox"
       ? "Boîte à outils du commercial"
-      : "Onboarding client — livrables prospection";
+      : "Onboarding client, livrables prospection";
 
   const today = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
 
@@ -98,7 +98,7 @@ export function PrintView({ missionId, scope = "both" }: { missionId: string; sc
           <p className="cover-doctitle">{docTitle}</p>
           <div className="cover-meta">
             <p>{today}</p>
-            <p className="cover-conf">Document confidentiel — usage commercial Noxias</p>
+            <p className="cover-conf">Document confidentiel, usage commercial Noxias</p>
           </div>
         </div>
       </section>
@@ -223,7 +223,7 @@ export function PrintView({ missionId, scope = "both" }: { missionId: string; sc
             <p className="part-intro">Trame d'entretien complète : passage du barrage, brise-glace décideur, qualification de la situation, questions PAIN & KPI, pitch de réponse adapté à la douleur identifiée et formulation de prise de RDV.</p>
 
             <div className="pitch-flow keep-together">
-              <p className="pitch-flow-eyebrow">PARCOURS COMMERCIAL — 6 ÉTAPES À DÉROULER DANS L'ORDRE</p>
+              <p className="pitch-flow-eyebrow">PARCOURS COMMERCIAL, 6 ÉTAPES À DÉROULER DANS L'ORDRE</p>
               <div className="pitch-flow-row">
                 {PITCH_FLOW.map((step, i) => (
                   <Fragment key={step.id}>
@@ -261,7 +261,7 @@ export function PrintView({ missionId, scope = "both" }: { missionId: string; sc
             <p className="part-intro">Cinq familles d'objections classiques : prestataires actuels & interne, budget & coût, temps & priorité, confiance & transparence, besoin & pertinence.</p>
 
             <div className="obj-method keep-together">
-              <p className="obj-method-eyebrow">MÉTHODE — RÉPONDRE À TOUTE OBJECTION EN 4 ÉTAPES</p>
+              <p className="obj-method-eyebrow">MÉTHODE, RÉPONDRE À TOUTE OBJECTION EN 4 ÉTAPES</p>
               <div className="obj-method-grid">
                 {OBJECTION_METHOD.map((m) => (
                   <div key={m.step} className="obj-method-card">
@@ -334,9 +334,9 @@ export function PrintView({ missionId, scope = "both" }: { missionId: string; sc
               <thead>
                 <tr>
                   <th>Critère</th>
-                  <th>Score 0 — faible</th>
-                  <th>Score 1 — moyen</th>
-                  <th>Score 2 — élevé</th>
+                  <th>Score 0, faible</th>
+                  <th>Score 1, moyen</th>
+                  <th>Score 2, élevé</th>
                 </tr>
               </thead>
               <tbody>
@@ -411,14 +411,14 @@ export function PrintView({ missionId, scope = "both" }: { missionId: string; sc
               <div className="qualif-scorecard-verdict">
                 <p className="qualif-scorecard-eyebrow">VERDICT (cocher une option)</p>
                 <div className="qualif-scorecard-verdict-options">
-                  <span className="qualif-scorecard-verdict-opt verdict-cold"><span className="qualif-checkbox" /> Score &lt; 4 — <strong>Disqualifié</strong> / nurturing long</span>
-                  <span className="qualif-scorecard-verdict-opt verdict-warm"><span className="qualif-checkbox" /> Score 4–6 — <strong>À nourrir</strong> / séquence post-appel</span>
-                  <span className="qualif-scorecard-verdict-opt verdict-hot"><span className="qualif-checkbox" /> Score ≥ 7 — <strong>R2 GO</strong> — caler le rendez-vous</span>
+                  <span className="qualif-scorecard-verdict-opt verdict-cold"><span className="qualif-checkbox" /> Score &lt; 4, <strong>Disqualifié</strong> / nurturing long</span>
+                  <span className="qualif-scorecard-verdict-opt verdict-warm"><span className="qualif-checkbox" /> Score 4–6, <strong>À nourrir</strong> / séquence post-appel</span>
+                  <span className="qualif-scorecard-verdict-opt verdict-hot"><span className="qualif-checkbox" /> Score ≥ 7, <strong>R2 GO</strong>, caler le rendez-vous</span>
                 </div>
               </div>
 
               <div className="qualif-scorecard-notes">
-                <p className="qualif-scorecard-eyebrow">NOTES TERRAIN — DOULEUR IDENTIFIÉE, KPI CITÉ, NEXT STEP</p>
+                <p className="qualif-scorecard-eyebrow">NOTES TERRAIN, DOULEUR IDENTIFIÉE, KPI CITÉ, NEXT STEP</p>
                 <div className="qualif-scorecard-line-long" />
                 <div className="qualif-scorecard-line-long" />
                 <div className="qualif-scorecard-line-long" />
@@ -712,7 +712,7 @@ function PrintStyles() {
         font-weight: 700;
       }
 
-      /* PERSONAS — carte infographique */
+      /* PERSONAS, carte infographique */
       .persona-card {
         margin: 28px 0;
         padding: 24px;
@@ -865,7 +865,7 @@ function PrintStyles() {
         border-bottom: 5px solid transparent;
       }
 
-      /* OBJECTIONS — vue d'ensemble (5 cartes A → E) */
+      /* OBJECTIONS, vue d'ensemble (5 cartes A → E) */
       .obj-overview {
         display: grid;
         grid-template-columns: repeat(5, 1fr);
@@ -905,7 +905,7 @@ function PrintStyles() {
         color: var(--noxias-print-deep);
       }
 
-      /* QUALIFICATION SCALE — barre de scoring 0 → 10 */
+      /* QUALIFICATION SCALE, barre de scoring 0 → 10 */
       .qualif-scale {
         margin: 16px 0 36px;
         padding: 24px 24px 18px;
@@ -1205,7 +1205,7 @@ function PrintStyles() {
       .tier-cold { background: #f3f4f6; border-top-color: var(--noxias-print-muted); }
       .tier-cold .tier-eyebrow, .tier-cold .tier-score { color: var(--noxias-print-muted); }
 
-      /* PITCH FLOW — annotations pédagogiques sur le stepper */
+      /* PITCH FLOW, annotations pédagogiques sur le stepper */
       .pitch-flow-eyebrow {
         color: var(--noxias-print-accent-dark);
         font-weight: 700;
@@ -1224,7 +1224,7 @@ function PrintStyles() {
         line-height: 1.3;
       }
 
-      /* OBJECTIONS — méthode universelle 4 étapes */
+      /* OBJECTIONS, méthode universelle 4 étapes */
       .obj-method {
         margin: 16px 0 36px;
         padding: 24px;
@@ -1295,7 +1295,7 @@ function PrintStyles() {
         font-style: italic;
       }
 
-      /* QUALIFICATION — scorecard imprimable */
+      /* QUALIFICATION, scorecard imprimable */
       .qualif-scorecard {
         margin: 32px 0;
         padding: 28px 28px 24px;

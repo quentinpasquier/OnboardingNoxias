@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       .filter((q) => targetIds.includes(q.id))
       .map((q) => {
         const list = LIST_FRIENDLY_IDS.has(q.id) ? " (réponse en liste à puces `- ...`)" : "";
-        return `[${q.id}] **${q.category}** — ${q.question}${q.hint ? ` _(${q.hint})_` : ""}${list}`;
+        return `[${q.id}] **${q.category}**, ${q.question}${q.hint ? ` _(${q.hint})_` : ""}${list}`;
       })
       .join("\n");
 

@@ -136,7 +136,7 @@ export function ToolboxHub({ mission, update }: { mission: Mission; update: (u: 
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <CardTitle className="text-base">Boîte à outils — vue d'ensemble</CardTitle>
+                <CardTitle className="text-base">Boîte à outils, vue d'ensemble</CardTitle>
                 <CardDescription>Édite chaque section indépendamment. Régénère section par section ou bloc par bloc.</CardDescription>
               </div>
               <div className="flex items-center gap-2 flex-wrap justify-end">

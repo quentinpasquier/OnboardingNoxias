@@ -15,7 +15,7 @@ export function MissionHub({ missionId }: { missionId: string }) {
   const { mission, update } = useMission(missionId);
 
   useEffect(() => {
-    if (mission?.clientName) document.title = `${mission.clientName} — Onboarding Noxias`;
+    if (mission?.clientName) document.title = `${mission.clientName} · Onboarding Noxias`;
   }, [mission?.clientName]);
 
   if (mission === undefined) return <MissionLoadingSkeleton />;
@@ -72,7 +72,7 @@ export function MissionHub({ missionId }: { missionId: string }) {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <CardTitle className="text-base flex items-center gap-2"><Layers className="h-4 w-4 text-accent" /> Contexte client</CardTitle>
-                <CardDescription>Documents, site web, notes — ressources utilisées par l'IA dans les deux ateliers.</CardDescription>
+                <CardDescription>Documents, site web, notes, ressources utilisées par l'IA dans les deux ateliers.</CardDescription>
               </div>
               <Link href={`/missions/${mission.id}/contexte`}>
                 <Button variant="outline" size="sm">

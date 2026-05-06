@@ -59,7 +59,7 @@ export function PositioningEditor({ value, onChange }: { value: Toolbox["positio
 
       <Card className="lg:col-span-2">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Irritants — questions à poser au prospect</CardTitle>
+          <CardTitle className="text-sm">Irritants, questions à poser au prospect</CardTitle>
           <CardDescription>Pour ouvrir l'échange sans pitcher.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -327,7 +327,7 @@ export function ObjectionsListEditor({
 }
 
 /**
- * Ancien éditeur regroupé par catégorie — conservé pour rétro-compat si
+ * Ancien éditeur regroupé par catégorie, conservé pour rétro-compat si
  * jamais utilisé ailleurs. Préférer ObjectionsListEditor + parent qui groupe.
  */
 export function ObjectionsEditor({ value, onChange }: { value: Toolbox["objections"]; onChange: (v: Toolbox["objections"]) => void }) {
@@ -340,7 +340,7 @@ export function ObjectionsEditor({ value, onChange }: { value: Toolbox["objectio
       {grouped.map((g) => (
         <div key={g.code}>
           <h4 className="font-display text-base font-medium mb-3 flex items-center gap-2">
-            <Badge variant="accent">{g.code}</Badge> {g.label} <span className="text-xs text-muted-foreground font-sans font-normal">— {g.items.length} objections</span>
+            <Badge variant="accent">{g.code}</Badge> {g.label} <span className="text-xs text-muted-foreground font-sans font-normal">· {g.items.length} objections</span>
           </h4>
           <ObjectionsListEditor
             value={g.items}

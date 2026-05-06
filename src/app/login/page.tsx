@@ -1,7 +1,7 @@
 import { LoginForm } from "@/components/auth/LoginForm";
 import { NoxiasLogo } from "@/components/branding/Logo";
 
-export const metadata = { title: "Noxias — Connexion" };
+export const metadata = { title: "Noxias, Connexion" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const sp = await searchParams;

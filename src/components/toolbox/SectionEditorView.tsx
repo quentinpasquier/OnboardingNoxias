@@ -42,7 +42,7 @@ export function SectionEditorView({ missionId, sectionKey }: { missionId: string
   const def = SECTION_DEFS.find((s) => s.key === sectionKey);
 
   useEffect(() => {
-    if (mission?.clientName && def) document.title = `${def.label} — ${mission.clientName} — Noxias`;
+    if (mission?.clientName && def) document.title = `${def.label} · ${mission.clientName} · Noxias`;
   }, [mission?.clientName, def]);
 
   if (mission === undefined) return <AtelierLoading />;
@@ -61,7 +61,7 @@ export function SectionEditorView({ missionId, sectionKey }: { missionId: string
     <main className="container max-w-6xl py-10">
       <div className="mb-8">
         <Link href={`/missions/${mission.id}/boite-a-outils`} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-3">
-          <ArrowLeft className="h-3.5 w-3.5" /> Boîte à outils — {mission.clientName}
+          <ArrowLeft className="h-3.5 w-3.5" /> Boîte à outils, {mission.clientName}
         </Link>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex items-center gap-3 flex-wrap">
@@ -161,7 +161,7 @@ function SectionContent({
 }
 
 // -----------------------------------------------------------------------------
-// Pitch — chaque sous-section avec ses scripts éditables + boutons IA et manuel
+// Pitch, chaque sous-section avec ses scripts éditables + boutons IA et manuel
 // -----------------------------------------------------------------------------
 function PitchPerSubsection({
   mission,
@@ -208,7 +208,7 @@ function PitchPerSubsection({
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="accent">{id}</Badge>
                   <CardTitle className="text-base">{PITCH_SECTION_LABELS[id]}</CardTitle>
-                  {hasContent && <span className="text-xs text-muted-foreground">— {section!.scripts.length} script{section!.scripts.length > 1 ? "s" : ""}</span>}
+                  {hasContent && <span className="text-xs text-muted-foreground">· {section!.scripts.length} script{section!.scripts.length > 1 ? "s" : ""}</span>}
                 </div>
                 <RegenerateJobButton mission={mission} job={job} update={update} compact />
               </div>
@@ -276,7 +276,7 @@ function PitchPerSubsection({
 }
 
 // -----------------------------------------------------------------------------
-// Objections — chaque famille avec ses 6 objections éditables + boutons IA et manuel
+// Objections, chaque famille avec ses 6 objections éditables + boutons IA et manuel
 // -----------------------------------------------------------------------------
 function ObjectionsPerCategory({
   mission,
@@ -329,7 +329,7 @@ function ObjectionsPerCategory({
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="accent">{code}</Badge>
                   <CardTitle className="text-base">{OBJECTION_CATEGORY_LABELS[code]}</CardTitle>
-                  <span className="text-xs text-muted-foreground">— {items.length} / 6 objections</span>
+                  <span className="text-xs text-muted-foreground">· {items.length} / 6 objections</span>
                 </div>
                 <RegenerateJobButton mission={mission} job={job} update={update} compact />
               </div>
@@ -387,7 +387,7 @@ function RegenerateJobButton({
       }
       if (!res.ok) {
         const msg = data?.error ?? `Erreur HTTP ${res.status}`;
-        const extra = data?.raw ? ` — extrait : "${String(data.raw).slice(0, 120)}…"` : "";
+        const extra = data?.raw ? `, extrait : "${String(data.raw).slice(0, 120)}…"` : "";
         throw new Error(msg + extra);
       }
       if (!data?.data) throw new Error("Réponse IA vide ou mal formée.");

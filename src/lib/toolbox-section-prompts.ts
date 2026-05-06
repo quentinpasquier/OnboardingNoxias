@@ -19,7 +19,7 @@ Tu es un coach commercial senior, formé sur SPIN Selling (Neil Rackham), MEDDIC
 3. **Preuve par cas client en < 30 secondes** : tu glisses systématiquement un cas client réel avec nom + secteur + résultat chiffré ou anecdote utilisable. Pas de stat vague.
 4. **Cost of Inaction** avant la solution : tu fais voir le risque de ne rien faire avant de présenter la valeur. "Tell don't sell" inversé.
 5. **Commitment incrémental** : jamais demander un gros oui d'un coup. Demander un mini-oui → puis un autre → puis le RDV. Toujours laisser le prospect garder la main ("aucun engagement", "vous êtes libre", "on regarde simplement").
-6. **Ton parlé, pas écrit** : phrases courtes, ponctuation orale (virgules, pauses, retours), guillemets typographiques « … », un seul concept par phrase. Tu peux utiliser "—" pour les apartés. **Pas de jargon corporate**.
+6. **Ton parlé, pas écrit** : phrases courtes, ponctuation orale (virgules, pauses, retours), guillemets typographiques « … », un seul concept par phrase. **Interdiction absolue d'utiliser le tiret cadratin "—"** (trop écrit, trop manifeste) : préfère la virgule, le point, ou les parenthèses. **Pas de jargon corporate**.
 7. **Reformulation systématique** : tu reformules ce que dit le prospect avant de répondre, pour montrer que tu écoutes vraiment ("Si je comprends bien, …").
 8. **Variantes calibrées** : tu fournis toujours plusieurs variantes par script (standard / plus directe / plus impactante / version pour cible chaude vs cible froide).`;
 
@@ -203,7 +203,7 @@ Chaque script est rédigé comme une réplique commerciale parlée, format \`Com
 ⚠️ **MENTION OBLIGATOIRE D'UN CAS CLIENT RÉEL** dans au moins 2 scripts (variant standard + variant plus impactante), extrait de la question 31 de la matrice si fournie. Format : "On accompagne par exemple [nom du client] dans [secteur] qui … [résultat chiffré]". Si la question 31 n'a pas de cas concret, infère 1–2 cas plausibles et marque-les explicitement comme "[exemple à valider avec un vrai cas client]".`,
   },
   "2.0": {
-    label: "Réponse prospect — qualification de la situation actuelle",
+    label: "Réponse prospect, qualification de la situation actuelle",
     brief: `Génère exactement **4 scripts** correspondant aux 4 réponses types du prospect :
 - "On gère ça en interne / on s'en occupe nous-mêmes" → diagnostic des 3 dimensions (visibilité, temps perdu, rendu pro vs concurrents).
 - "On a déjà un prestataire / agence / freelance" → questions ouvertes sur durée d'engagement, montant mensuel, satisfaction réactivité + qualité + ROI.
@@ -213,15 +213,15 @@ Chaque script est rédigé comme une réplique commerciale parlée, format \`Com
 Chaque script reformule la réponse prospect avant de poser sa propre question (asymétrie d'expertise).`,
   },
   "3.0": {
-    label: "Questions de qualification — PAIN & KPI",
+    label: "Questions de qualification, PAIN & KPI",
     brief: `Génère **1 ou 2 scripts** qui déroulent les vraies questions à poser, façon SPIN Selling. Inclus :
 - 1 phrase d'ouverture qui rappelle qu'il ne s'agit pas forcément de tout remplacer mais de challenger l'existant.
-- 6 à 8 questions concrètes (situation, problème, implication, need-payoff) — phrasées comme à l'oral, courtes.
+- 6 à 8 questions concrètes (situation, problème, implication, need-payoff), phrasées comme à l'oral, courtes.
 - 1 question fermée binaire pour tester l'urgence ("Vous avez un enjeu particulier dans les 3 prochains mois ?").
 - 1 question de hiérarchisation : "Le plus gros gain pour vous aujourd'hui ce serait plutôt : …".`,
   },
   "4.0": {
-    label: "Pitch de réponse adapté — proposition de valeur",
+    label: "Pitch de réponse adapté, proposition de valeur",
     brief: `Génère **6 à 8 variants**, chacun déclenché par une douleur précise identifiée à l'étape 3.0. Format obligatoire :
 - variant : "Si douleur = [douleur concrète]"
 - text : 3–5 phrases qui (1) reconnaissent la douleur, (2) la reformulent en irritant business chiffré, (3) montrent comment le client la résout précisément (process, chiffres, garanties).
@@ -235,7 +235,7 @@ Couvre au moins ces 6 douleurs : trop de temps perdu sur la technique / produit 
 - **Plus directe** : "Le plus simple, ce serait qu'on se bloque …" + question fermée alternative.
 - **Orientée référence / projet** : promesse d'une démo + cas clients du secteur + question fermée alternative.
 
-Rajoute aussi une **checklist mentale** (5 points) que le commercial doit avoir validée avant de proposer le RDV (besoin identifié, contexte compris, différence Noxias posée, objection de premier niveau levée, etc.) — sous forme d'un script supplémentaire avec variant "Checklist mentale" et text en bullet points.`,
+Rajoute aussi une **checklist mentale** (5 points) que le commercial doit avoir validée avant de proposer le RDV (besoin identifié, contexte compris, différence Noxias posée, objection de premier niveau levée, etc.), sous forme d'un script supplémentaire avec variant "Checklist mentale" et text en bullet points.`,
   },
 };
 
@@ -374,7 +374,7 @@ ${COMMON_RULES}`,
         maxTokens: heavy ? 6000 : 4500,
         effort: "low",
         thinking: heavy ? "adaptive" : "disabled",
-        userPrompt: `Génère **uniquement la section "${job.id} — ${def.label}"** du pitch V1.
+        userPrompt: `Génère **uniquement la section "${job.id}, ${def.label}"** du pitch V1.
 
 Format de sortie (JSON) :
 \`\`\`
@@ -398,7 +398,7 @@ ${COMMON_RULES}`,
         maxTokens: 4500,
         effort: "low",
         thinking: "disabled",
-        userPrompt: `Génère **uniquement la famille d'objections "${job.code} — ${def.label}"** : EXACTEMENT 6 objections, ids de ${startId} à ${startId + 5}, toutes avec **category = "${job.code}"**.
+        userPrompt: `Génère **uniquement la famille d'objections "${job.code}, ${def.label}"** : EXACTEMENT 6 objections, ids de ${startId} à ${startId + 5}, toutes avec **category = "${job.code}"**.
 
 Pour chaque objection :
 - **text** : la phrase du prospect entre guillemets typographiques « … » (≤ 12 mots, naturelle, parlée). Inspire-toi de ces patterns prospects sans les copier mot pour mot :
@@ -418,8 +418,8 @@ ${COMMON_RULES}`,
         thinking: "disabled",
         userPrompt: `Génère la **matrice de qualification (Scoring R1)**.
 
-- **criteria** : EXACTEMENT 5 critères dans cet ordre — Douleur (PAIN), Objectif (GAIN), Budget, Autorité (Décision), Urgence (Déclencheur). Pour chacun, score0/score1/score2 décrivent **avec exemples concrets entre guillemets** ("Mon site n'est plus à jour", "Je paye 200 €/mois et je ne suis pas content").
-- **tiers** : EXACTEMENT 3 tiers — "Tier A — Lead chaud" (7 à 10), "Tier B — Lead tiède" (4 à 6), "Tier C — Lead froid" (0 à 3). Pour chacun : description (1–3 phrases) + action (1 phrase).
+- **criteria** : EXACTEMENT 5 critères dans cet ordre, Douleur (PAIN), Objectif (GAIN), Budget, Autorité (Décision), Urgence (Déclencheur). Pour chacun, score0/score1/score2 décrivent **avec exemples concrets entre guillemets** ("Mon site n'est plus à jour", "Je paye 200 €/mois et je ne suis pas content").
+- **tiers** : EXACTEMENT 3 tiers, "Tier A, Lead chaud" (7 à 10), "Tier B, Lead tiède" (4 à 6), "Tier C, Lead froid" (0 à 3). Pour chacun : description (1–3 phrases) + action (1 phrase).
 
 ${COMMON_RULES}`,
       };

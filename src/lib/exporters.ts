@@ -15,9 +15,9 @@ export function missionToMarkdown(mission: Mission, opts: { scope?: ExportScope 
   const scope = opts.scope ?? "both";
   const lines: string[] = [];
 
-  if (scope === "matrix") lines.push(`# ${mission.clientName} — Matrice de prospection`);
-  else if (scope === "toolbox") lines.push(`# ${mission.clientName} — Boîte à outils du commercial`);
-  else lines.push(`# ${mission.clientName} — Livrables prospection`);
+  if (scope === "matrix") lines.push(`# ${mission.clientName}, Matrice de prospection`);
+  else if (scope === "toolbox") lines.push(`# ${mission.clientName}, Boîte à outils du commercial`);
+  else lines.push(`# ${mission.clientName}, Livrables prospection`);
   lines.push(`*Généré par Onboarding Noxias*\n`);
 
   if (scope === "matrix" || scope === "both") {
@@ -40,7 +40,7 @@ export function missionToMarkdown(mission: Mission, opts: { scope?: ExportScope 
     lines.push(`\n**Promesse centrale.** ${tb.positioning.promise}\n`);
     lines.push(`**Services à mettre en avant.** ${tb.positioning.services}\n`);
     lines.push(`**Cibles à prioriser.** ${tb.positioning.targets}\n`);
-    lines.push(`**Résultat tangible (30-60j).** ${tb.positioning.valueResult ?? "—"}\n`);
+    lines.push(`**Résultat tangible (30-60j).** ${tb.positioning.valueResult ?? ""}\n`);
     lines.push(`**Phrases à marteler :**`);
     for (const p of tb.positioning.phrases) lines.push(`- *« ${p} »*`);
     if (tb.positioning.irritants?.length) {
@@ -70,7 +70,7 @@ export function missionToMarkdown(mission: Mission, opts: { scope?: ExportScope 
 
     lines.push(`### Pitch V1\n`);
     for (const s of tb.pitch) {
-      lines.push(`#### ${s.id} — ${s.label}`);
+      lines.push(`#### ${s.id}, ${s.label}`);
       for (const sc of s.scripts) {
         lines.push(`\n**${sc.variant}**\n`);
         lines.push(sc.text + "\n");

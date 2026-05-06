@@ -178,7 +178,7 @@ function buildToolboxSection(mission: Mission): (Paragraph | Table)[] {
   }
 
   if (tb.positioning.irritants?.length) {
-    out.push(h("Pourquoi nous ? — Questions à ouvrir", HeadingLevel.HEADING_2));
+    out.push(h("Pourquoi nous ?, Questions à ouvrir", HeadingLevel.HEADING_2));
     out.push(p("La prospection ne démarre pas par « Nous vendons … ». Elle commence par un irritant concret :", { italic: true, color: MUTED }));
     for (const q of tb.positioning.irritants) out.push(bullet(q));
   }
@@ -261,7 +261,7 @@ function buildToolboxSection(mission: Mission): (Paragraph | Table)[] {
     width: { size: 100, type: WidthType.PERCENTAGE },
     rows: [
       new TableRow({
-        children: [headerCell("Critère"), headerCell("Score 0 — faible"), headerCell("Score 1 — moyen"), headerCell("Score 2 — élevé")],
+        children: [headerCell("Critère"), headerCell("Score 0, faible"), headerCell("Score 1, moyen"), headerCell("Score 2, élevé")],
         tableHeader: true,
       }),
       ...tb.qualification.criteria.map((c, idx) =>
@@ -394,7 +394,7 @@ function buildCoverPage(title: string, subtitle: string): Paragraph[] {
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: "Document confidentiel — usage commercial Noxias", color: MUTED, size: 14, italics: true, font: "Ubuntu" })],
+      children: [new TextRun({ text: "Document confidentiel, usage commercial Noxias", color: MUTED, size: 14, italics: true, font: "Ubuntu" })],
     }),
     new Paragraph({ children: [new PageBreak()] }),
   ];
@@ -471,7 +471,7 @@ export async function POST(req: Request) {
 
     const doc = new Document({
       creator: "Noxias Onboarding Builder",
-      title: `${mission.clientName} — ${docTitle}`,
+      title: `${mission.clientName}, ${docTitle}`,
       styles: { default: { document: { run: { font: "Ubuntu" } } } },
       sections: [{
         headers: { default: headerEl },

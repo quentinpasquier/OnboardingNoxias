@@ -19,6 +19,10 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { NoxiasLogo } from "@/components/branding/Logo";
 import { formatDate } from "@/lib/utils";
 import { matrixToCsv, downloadCsv } from "@/lib/share-csv";
+import { CommentsProvider, useComments } from "@/components/share/CommentsContext";
+import { CommentsDrawer } from "@/components/share/CommentsDrawer";
+import { CommentTrigger } from "@/components/share/CommentTrigger";
+import { PITCH_SECTION_LABELS, OBJECTION_CATEGORY_LABELS } from "@/lib/toolbox-sections";
 
 const OBJ_CATS: Record<string, string> = {
   A: "Prestataires actuels / interne",
@@ -69,11 +73,14 @@ export function SharedMissionView({ token }: { token: string }) {
   }
 
   return (
-    <>
+    <CommentsProvider token={token}>
       <header className="border-b bg-card sticky top-0 z-30">
         <div className="container flex h-20 items-center justify-between gap-4">
           <NoxiasLogo size={48} />
-          <Badge variant="outline" className="text-[10px]"><Eye className="h-3 w-3 mr-1" /> LECTURE SEULE</Badge>
+          <div className="flex items-center gap-2 flex-wrap">
+            <CommentsTopbarButton />
+            <Badge variant="outline" className="text-[10px]"><Eye className="h-3 w-3 mr-1" /> LECTURE SEULE</Badge>
+          </div>
         </div>
       </header>
 
@@ -87,7 +94,7 @@ export function SharedMissionView({ token }: { token: string }) {
             </a>
           )}
           <p className="text-muted-foreground max-w-2xl mx-auto mt-6 leading-relaxed">
-            Cet espace partagé synthétise le travail de cadrage de votre prospection. Vous pouvez consulter chaque module, exporter au format de votre choix, ajouter vos documents et nous laisser vos recommandations.
+            Cet espace synthétise le travail de cadrage de votre prospection. Consultez chaque module, exportez le format de votre choix, ajoutez vos documents, et laissez-nous vos retours via les bulles de commentaire à côté de chaque élément.
           </p>
         </section>
 
@@ -104,7 +111,26 @@ export function SharedMissionView({ token }: { token: string }) {
           <p className="mt-1">Document confidentiel destiné au client. Aucune indexation.</p>
         </footer>
       </main>
-    </>
+
+      <CommentsDrawer />
+    </CommentsProvider>
+  );
+}
+
+function CommentsTopbarButton() {
+  const { comments, open } = useComments();
+  const unresolved = comments.filter((c) => !c.resolved).length;
+  if (comments.length === 0) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => open({ anchorType: "general", anchorId: null, anchorLabel: "Discussion générale" })}
+      className="inline-flex items-center gap-1.5 text-xs rounded-full px-3 py-1.5 bg-accent/10 hover:bg-accent/20 text-accent-foreground border border-accent/30 transition-colors"
+    >
+      <MessageSquareQuote className="h-3.5 w-3.5" />
+      <span className="font-medium tabular-nums">{comments.length} commentaire{comments.length > 1 ? "s" : ""}</span>
+      {unresolved > 0 && <span className="text-[10px] text-amber-700">· {unresolved} ouvert{unresolved > 1 ? "s" : ""}</span>}
+    </button>
   );
 }
 
@@ -338,9 +364,12 @@ function MatrixModule({ mission, token }: { mission: Mission; token: string }) {
                   {groupAnswers.map((q) => (
                     <Card key={q.id}>
                       <CardHeader className="pb-2">
-                        <div className="flex items-start gap-2 flex-wrap">
-                          <Badge variant="secondary">#{q.id}</Badge>
-                          <CardTitle className="text-base">{q.question}</CardTitle>
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div className="flex items-start gap-2 flex-wrap min-w-0">
+                            <Badge variant="secondary">#{q.id}</Badge>
+                            <CardTitle className="text-base">{q.question}</CardTitle>
+                          </div>
+                          <CommentTrigger anchorType="matrix" anchorId={String(q.id)} anchorLabel={`Matrice #${q.id} · ${q.question}`} />
                         </div>
                       </CardHeader>
                       <CardContent>
@@ -440,7 +469,10 @@ async function exportSharedDocx(token: string, scope: "matrix" | "toolbox" | "bo
 function PositioningBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
   return (
     <div>
-      <h3 className="font-display text-xl font-bold mb-3 flex items-center gap-2"><Target className="h-5 w-5 text-accent" /> Positionnement</h3>
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <h3 className="font-display text-xl font-bold flex items-center gap-2"><Target className="h-5 w-5 text-accent" /> Positionnement</h3>
+        <CommentTrigger anchorType="positioning" anchorId={null} anchorLabel="Positionnement" />
+      </div>
       <Card>
         <CardContent className="py-6 space-y-5">
           {tb.positioning.intro && (
@@ -503,8 +535,13 @@ function PersonasBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
         {tb.personas.map((p, i) => (
           <Card key={i}>
             <CardHeader>
-              <CardTitle className="text-base">{p.title}</CardTitle>
-              <CardDescription className="text-xs uppercase tracking-wider text-accent font-bold">PERSONA {String(i + 1).padStart(2, "0")}</CardDescription>
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <CardTitle className="text-base">{p.title}</CardTitle>
+                  <CardDescription className="text-xs uppercase tracking-wider text-accent font-bold">PERSONA {String(i + 1).padStart(2, "0")}</CardDescription>
+                </div>
+                <CommentTrigger anchorType="persona" anchorId={String(i)} anchorLabel={`Persona ${i + 1} · ${p.title}`} />
+              </div>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               {p.profile && <div><p className="text-xs uppercase tracking-wider text-muted-foreground font-bold mb-1">Profil</p><ProseRender text={p.profile} /></div>}
@@ -523,7 +560,10 @@ function PersonasBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
 function ArgumentsBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
   return (
     <div>
-      <h3 className="font-display text-xl font-bold mb-3">Arguments massue & disqualification</h3>
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <h3 className="font-display text-xl font-bold">Arguments massue & disqualification</h3>
+        <CommentTrigger anchorType="arguments" anchorId={null} anchorLabel="Arguments & disqualification" />
+      </div>
       {tb.killerArguments.length > 0 && (
         <div className="grid md:grid-cols-2 gap-3 mb-4">
           {tb.killerArguments.map((a, i) => (
@@ -552,9 +592,16 @@ function PitchBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
         {tb.pitch.map((s) => (
           <Card key={s.id}>
             <CardHeader className="pb-2">
-              <div className="flex items-center gap-2">
-                <Badge variant="accent">{s.id}</Badge>
-                <CardTitle className="text-base">{s.label}</CardTitle>
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Badge variant="accent">{s.id}</Badge>
+                  <CardTitle className="text-base">{s.label}</CardTitle>
+                </div>
+                <CommentTrigger
+                  anchorType="pitch"
+                  anchorId={s.id}
+                  anchorLabel={`Pitch ${s.id} · ${PITCH_SECTION_LABELS[s.id as keyof typeof PITCH_SECTION_LABELS] ?? s.label}`}
+                />
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -583,9 +630,16 @@ function ObjectionsBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
           return (
             <Card key={code}>
               <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <Badge variant="accent">{code}</Badge>
-                  <CardTitle className="text-base">{OBJ_CATS[code]}</CardTitle>
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="accent">{code}</Badge>
+                    <CardTitle className="text-base">{OBJ_CATS[code]}</CardTitle>
+                  </div>
+                  <CommentTrigger
+                    anchorType="objection_family"
+                    anchorId={code}
+                    anchorLabel={`Objections ${code} · ${OBJECTION_CATEGORY_LABELS[code as keyof typeof OBJECTION_CATEGORY_LABELS] ?? OBJ_CATS[code]}`}
+                  />
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -607,7 +661,10 @@ function ObjectionsBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
 function QualificationBlock({ tb }: { tb: NonNullable<Mission["toolbox"]> }) {
   return (
     <div>
-      <h3 className="font-display text-xl font-bold mb-3 flex items-center gap-2"><Layers className="h-5 w-5 text-accent" /> Matrice de qualification (R1)</h3>
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <h3 className="font-display text-xl font-bold flex items-center gap-2"><Layers className="h-5 w-5 text-accent" /> Matrice de qualification (R1)</h3>
+        <CommentTrigger anchorType="qualification" anchorId={null} anchorLabel="Matrice de qualification" />
+      </div>
       <Card>
         <CardContent className="py-6">
           <p className="text-sm text-muted-foreground mb-4 italic">Lead « Qualifié pour R2 » si score ≥ 7/10. Cinq critères, chacun noté 0/1/2.</p>

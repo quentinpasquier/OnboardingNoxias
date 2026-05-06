@@ -13,14 +13,27 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { MissionLoadingSkeleton } from "@/components/skeletons/MissionLoadingSkeleton";
 import { ConfirmButton } from "@/components/ui/confirm-button";
+import { MissionCommentsPanel } from "@/components/MissionCommentsPanel";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { BonhommeError, BonhommeReady, BonhommePointing } from "@/components/illustrations/Bonhomme";
 
 export function MissionHub({ missionId }: { missionId: string }) {
   const { mission, update } = useMission(missionId);
+  const [adminName, setAdminName] = useState("Noxias");
 
   useEffect(() => {
     if (mission?.clientName) document.title = `${mission.clientName} · Onboarding Noxias`;
   }, [mission?.clientName]);
+
+  useEffect(() => {
+    getSupabaseBrowserClient().auth.getUser().then(({ data }) => {
+      const u = data.user;
+      if (!u) return;
+      const meta = (u.user_metadata ?? {}) as { full_name?: string; name?: string };
+      const display = meta.full_name || meta.name || u.email?.split("@")[0] || "Noxias";
+      setAdminName(display);
+    }).catch(() => {});
+  }, []);
 
   if (mission === undefined) return <MissionLoadingSkeleton />;
   if (mission === null) {
@@ -80,7 +93,7 @@ export function MissionHub({ missionId }: { missionId: string }) {
       </div>
 
       {mission.recommendations?.trim() && (
-        <Card className="mb-8 border-accent/30 bg-accent/5">
+        <Card className="mb-6 border-accent/30 bg-accent/5">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <MessageSquareQuote className="h-4 w-4 text-accent" /> Recommandations du client
@@ -92,6 +105,10 @@ export function MissionHub({ missionId }: { missionId: string }) {
           </CardContent>
         </Card>
       )}
+
+      <div className="mb-8">
+        <MissionCommentsPanel missionId={mission.id} adminName={adminName} />
+      </div>
 
       <section className="mb-8">
         <Card>

@@ -17,3 +17,22 @@ export function NoxiasLogo({ className, size = 48 }: { className?: string; size?
     />
   );
 }
+
+/**
+ * Icône carré (X + triangle vert sur fond marine), identique au favicon.
+ * Pour les écrans de chargement, header mobile, OG previews, places où le
+ * wordmark est trop large.
+ */
+export function NoxiasIconMark({ className, size = 32 }: { className?: string; size?: number }) {
+  return (
+    <img
+      src="/brand/icon.svg"
+      alt="Noxias"
+      width={size}
+      height={size}
+      style={{ width: size, height: size }}
+      className={cn("inline-block select-none", className)}
+      draggable={false}
+    />
+  );
+}

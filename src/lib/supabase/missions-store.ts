@@ -1,6 +1,6 @@
 "use client";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import type { Mission, MissionFile, MatrixAnswers, MatrixStatus, MissionStatus, MissionComment } from "@/types/mission";
+import type { Mission, MissionFile, MatrixAnswers, MatrixStatus, MissionStatus, MissionComment, PackType } from "@/types/mission";
 import type { Toolbox } from "@/lib/toolbox-schema";
 
 type CommentRow = {
@@ -42,6 +42,9 @@ type Row = {
   share_token: string | null;
   recommendations: string | null;
   validations: Record<string, boolean> | null;
+  start_date: string | null;
+  delivery_date: string | null;
+  pack_type: PackType | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -61,6 +64,9 @@ export function rowToMission(r: Row): Mission {
     shareToken: r.share_token ?? undefined,
     recommendations: r.recommendations ?? undefined,
     validations: r.validations ?? {},
+    startDate: r.start_date ?? undefined,
+    deliveryDate: r.delivery_date ?? undefined,
+    packType: r.pack_type ?? undefined,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -80,6 +86,9 @@ function missionToRow(m: Mission, userId?: string): Partial<Row> {
     share_token: m.shareToken ?? null,
     recommendations: m.recommendations ?? null,
     validations: m.validations ?? {},
+    start_date: m.startDate ?? null,
+    delivery_date: m.deliveryDate ?? null,
+    pack_type: m.packType ?? null,
     ...(userId ? { created_by: userId } : {}),
   };
 }

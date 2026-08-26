@@ -16,6 +16,7 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { MissionCommentsPanel } from "@/components/MissionCommentsPanel";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { BonhommeError, BonhommeReady, BonhommePointing } from "@/components/illustrations/Bonhomme";
+import { TrackingBar } from "@/components/mission/TrackingBar";
 
 export function MissionHub({ missionId }: { missionId: string }) {
   const { mission, update } = useMission(missionId);
@@ -90,6 +91,10 @@ export function MissionHub({ missionId }: { missionId: string }) {
             </Button>
           </div>
         </div>
+      </div>
+
+      <div className="mb-6">
+        <TrackingBar mission={mission} update={update} />
       </div>
 
       {mission.recommendations?.trim() && (

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, ArrowRight, FileText, Loader2 } from "lucide-react";
+import { Plus, ArrowRight, FileText, Loader2, Monitor } from "lucide-react";
 import { BonhommeWelcome, BonhommeEmpty } from "@/components/illustrations/Bonhomme";
 import { missionsStore } from "@/lib/supabase/missions-store";
 import { emptyMission, type Mission } from "@/types/mission";
@@ -70,11 +70,17 @@ export function Dashboard() {
         </div>
       </section>
 
-      <div className="flex items-end justify-between mb-6">
+      <div className="flex items-end justify-between mb-6 flex-wrap gap-3">
         <div>
           <h2 className="font-display text-xl font-medium">Missions</h2>
           <p className="text-sm text-muted-foreground mt-1">{missions === null ? "Chargement…" : `${missions.length} mission${missions.length > 1 ? "s" : ""}`}</p>
         </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link href="/wall" target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" size="lg">
+              <Monitor /> Mur d'avancement
+            </Button>
+          </Link>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button variant="default" size="lg">
@@ -108,6 +114,7 @@ export function Dashboard() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {error && (
